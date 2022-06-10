@@ -14,7 +14,6 @@ LAST_STORY_ID = 0
 INSTA_USER = os.getenv('INSTA_USER')
 INSTA_PWD = os.getenv('INSTA_PWD')
 
-
 # Discord vars
 DISCORD_BOT_TOKEN = os.getenv('INSTABOT_TOKEN')
 DISCORD_INTENTS = discord.Intents.default()
@@ -27,8 +26,10 @@ AWS_DYNAMO_SESSION = dynamodb.create_session()
 # Genral vars
 INSTABOT_CONFIG = {}
 
+@logger.catch
 def instagram_login():
     global INSTA_CLIENT
+    
     INSTA_CLIENT = instagrapi.Client()
     INSTA_CLIENT.login(INSTA_USER, INSTA_PWD)
 
@@ -46,71 +47,83 @@ def load_config():
 def get_stories_by_user(username):
     global LAST_STORY_ID
     logger.info(f'Retrieving Stories from: {username}')
-
     result = {}
-    user_id = INSTA_CLIENT.user_id_from_username(username)
-    user_stories = INSTA_CLIENT.user_stories(user_id)
 
-    print(LAST_STORY_ID) # debug
+    try:
+        user_id = INSTA_CLIENT.user_id_from_username(username)
+        user_stories = INSTA_CLIENT.user_stories(user_id)
 
-    if str(user_stories[-1].id) == LAST_STORY_ID:
-        print('Using private API') # debug
-        user_stories = INSTA_CLIENT.user_stories_v1(user_id)
+        print(LAST_STORY_ID) # debug
 
-    logger.info(f'{username} Number of Stories: {len(user_stories)}')
-    
-    for story in user_stories:
+        if str(user_stories[-1].id) == LAST_STORY_ID:
+            print('Using private API') # debug
+            user_stories = INSTA_CLIENT.user_stories_v1(user_id)
+
+        logger.info(f'{username} Number of Stories: {len(user_stories)}')
         
-        pk = story.pk
-        id = story.id
-        url = story.thumbnail_url
-        date = story.taken_at
+        for story in user_stories:
+            
+            pk = story.pk
+            id = story.id
+            url = story.thumbnail_url
+            date = story.taken_at
 
-        logger.info(f'{id} - {date}')
-        result[id] = (str(url), pk, date)
+            logger.info(f'{id} - {date}')
+            result[id] = (str(url), pk, date)
+    
+    except Exception as e:
+        result = {}
+        logger.error(e)
+    
+    finally:
+        return result
 
-    return result
 
-@logger.catch
 def update_stories(username, all_user_stories):
     global LAST_STORY_ID
     logger.info(f'Update Stories for: {username}')
 
-    new_stories = {}
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    try:
 
-    stories_log = dynamodb.get_item( AWS_DYNAMO_SESSION, 
-                                    'mm_instabot', 
-                                    f'{username}_stories_{current_year}_{current_month}')
+        new_stories = {}
+        current_month = datetime.now().month
+        current_year = datetime.now().year
 
-    if stories_log:
-        LAST_STORY_ID = stories_log[-1]
-    else:
-        stories_log = []
+        stories_log = dynamodb.get_item( AWS_DYNAMO_SESSION, 
+                                        'mm_instabot', 
+                                        f'{username}_stories_{current_year}_{current_month}')
 
-    for id, info in all_user_stories.items():
-
-        # Append new Story id
-        if id not in stories_log:
-            new_stories[id] = info
-            stories_log.append(id)
-            
-            dynamodb.put_item(  AWS_DYNAMO_SESSION, 
-                                'mm_instabot', 
-                                f'{username}_stories_{current_year}_{current_month}',
-                                stories_log)
-    
-    # See new Stories pks
-    new_stories_pks = [int(info[1]) for info in new_stories.values()]
-    if new_stories_pks:
-        if INSTA_CLIENT.story_seen(new_stories_pks):
-            logger.info(f'Stories seen: {new_stories_pks}')
+        if stories_log:
+            LAST_STORY_ID = stories_log[-1]
         else:
-            logger.error(f'Error trying to see Stories: {new_stories_pks}')
+            stories_log = []
 
+        for id, info in all_user_stories.items():
 
-    return new_stories
+            # Append new Story id
+            if id not in stories_log:
+                new_stories[id] = info
+                stories_log.append(id)
+                
+                dynamodb.put_item(  AWS_DYNAMO_SESSION, 
+                                    'mm_instabot', 
+                                    f'{username}_stories_{current_year}_{current_month}',
+                                    stories_log)
+        
+        # See new Stories pks
+        new_stories_pks = [int(info[1]) for info in new_stories.values()]
+        if new_stories_pks:
+            if INSTA_CLIENT.story_seen(new_stories_pks):
+                logger.info(f'Stories seen: {new_stories_pks}')
+            else:
+                logger.error(f'Error trying to see Stories: {new_stories_pks}')
+    
+    except Exception as e:
+        new_stories = None
+        logger.error(e)
+
+    finally:
+        return new_stories
 
 
 @logger.catch
@@ -122,12 +135,13 @@ async def send_message_if_story():
         
     while not DISCORD_CLIENT.is_closed():
         INSTABOT_CONFIG = load_config()
+        await asyncio.sleep(int(INSTABOT_CONFIG['loop_timeout']))
 
         for insta_user in INSTABOT_CONFIG['insta_target_users']:
             all_user_stories = get_stories_by_user(insta_user)
             new_stories = update_stories(insta_user, all_user_stories)
 
-            if new_stories:
+            if isinstance(new_stories, dict):
 
                 for id, info in new_stories.items():
 
@@ -142,9 +156,8 @@ async def send_message_if_story():
                     logger.info(msg)
                     await channel.send(msg)
             else:
+                # An exception raised and new_stories is None
                 instagram_login()
-
-        await asyncio.sleep(int(INSTABOT_CONFIG['loop_timeout']))
 
 
 @DISCORD_CLIENT.event
