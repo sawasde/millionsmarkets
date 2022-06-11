@@ -156,7 +156,7 @@ async def send_message_if_story():
                     logger.info(msg)
                     await channel.send(msg)
             else:
-                # An exception raised and new_stories is None
+                # An exception raised before and new_stories is set to None
                 instagram_login()
 
 
