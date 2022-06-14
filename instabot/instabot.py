@@ -55,9 +55,10 @@ def get_stories_by_user(username):
 
         print(LAST_STORY_ID) # debug
 
-        if str(user_stories[-1].id) == LAST_STORY_ID:
-            print('Using private API') # debug
-            user_stories = INSTA_CLIENT.user_stories_v1(user_id)
+        if user_stories:
+            if str(user_stories[-1].id) == LAST_STORY_ID:
+                print('Using private API') # debug
+                user_stories = INSTA_CLIENT.user_stories_v1(user_id)
 
         logger.info(f'{username} Number of Stories: {len(user_stories)}')
         
