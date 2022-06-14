@@ -29,6 +29,7 @@ INSTABOT_CONFIG = {}
 @logger.catch
 def instagram_login():
     global INSTA_CLIENT
+    logger.info(f'Log in isntagram')
     
     INSTA_CLIENT = instagrapi.Client()
     INSTA_CLIENT.login(INSTA_USER, INSTA_PWD)
@@ -36,6 +37,7 @@ def instagram_login():
 
 @logger.catch
 def load_config():
+    logger.info(f'Load Config dict')
    
     if DEBUG:
         return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_instabot', 'test_config')
