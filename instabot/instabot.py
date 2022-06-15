@@ -29,7 +29,7 @@ INSTABOT_CONFIG = {}
 @logger.catch
 def instagram_login():
     global INSTA_CLIENT
-    logger.info(f'Log in isntagram')
+    logger.info(f'Log in Instagram')
     
     INSTA_CLIENT = instagrapi.Client()
     INSTA_CLIENT.login(INSTA_USER, INSTA_PWD)
@@ -40,9 +40,9 @@ def load_config():
     logger.info(f'Load Config dict')
    
     if DEBUG:
-        return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_instabot', 'test_config')
+        return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_instabot', {'feature' : 'test_config'})
     else:
-        return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_instabot', 'prod_config')
+        return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_instabot', {'feature' : 'prod_config'})
 
 
 @logger.catch
@@ -94,7 +94,7 @@ def update_stories(username, all_user_stories):
 
         stories_log = dynamodb.get_item( AWS_DYNAMO_SESSION, 
                                         'mm_instabot', 
-                                        f'{username}_stories_{current_year}_{current_month}')
+                                        {'feature': f'{username}_stories_{current_year}_{current_month}'})
 
         if stories_log:
             LAST_STORY_ID = stories_log[-1]
@@ -110,8 +110,8 @@ def update_stories(username, all_user_stories):
                 
                 dynamodb.put_item(  AWS_DYNAMO_SESSION, 
                                     'mm_instabot', 
-                                    f'{username}_stories_{current_year}_{current_month}',
-                                    stories_log)
+                                    {'feature' : f'{username}_stories_{current_year}_{current_month}',
+                                    'value' : stories_log})
         
         # See new Stories pks
         new_stories_pks = [int(info[1]) for info in new_stories.values()]
@@ -175,12 +175,14 @@ def launch():
     # Load config
     INSTABOT_CONFIG = load_config()
 
+    # Log path
+    logger.add(INSTABOT_CONFIG['log_path'])
+
     #login to instagram
     instagram_login()
 
-    print(INSTABOT_CONFIG)
-    # Log path
-    logger.add(INSTABOT_CONFIG['log_path'])
+    # Log config
+    logger.info(INSTABOT_CONFIG)
 
     # Discord initialize
     DISCORD_CLIENT.loop.create_task(send_message_if_story())

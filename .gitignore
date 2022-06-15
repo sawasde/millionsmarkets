@@ -7,3 +7,6 @@
 
 #cache
 *__pycache__*
+
+assets/
+migration.py

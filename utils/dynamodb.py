@@ -1,4 +1,5 @@
 from loguru import logger
+from boto3.dynamodb.conditions import Key
 import boto3
 import os
 
@@ -10,16 +11,12 @@ def create_session():
                         )
 
 @logger.catch
-def get_item(dyn_session, table_name, feature):
-    dynamodb = dyn_session.resource('dynamodb', region_name="us-east-1")
+def get_item(dyn_session, table_name, key, region='us-east-1'):
+
+    dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
 
-    response = table.get_item(
-        Key={
-            'feature': feature,
-
-        }
-    )
+    response = table.get_item(Key=key)
     
     if 'Item' in response:
         return response['Item']['value']
@@ -28,18 +25,22 @@ def get_item(dyn_session, table_name, feature):
 
 
 @logger.catch
-def put_item(dyn_session, table_name, feature, value):
-    dynamodb = dyn_session.resource('dynamodb', region_name="us-east-1")
-    table = dynamodb.Table(table_name)
+def put_item(dyn_session, table_name, item, region='us-east-1'):
 
-    item = {
-            'feature': feature,
-            'value' : value
-        }
+    dynamodb = dyn_session.resource('dynamodb', region_name=region)
+    table = dynamodb.Table(table_name)
 
     response = table.put_item(Item=item)
 
     return response
     
+@logger.catch
+def query_items(dyn_session, table_name, key, value, region='us-east-1'):
 
+    dynamodb = dyn_session.resource('dynamodb', region_name=region)
+    table = dynamodb.Table(table_name)
+    
+    filtering_exp = Key(key).eq(value)
+    response = table.query(KeyConditionExpression=filtering_exp)
 
+    return response['Items']
