@@ -4,7 +4,7 @@ import asyncio
 import instagrapi
 from loguru import logger
 from datetime import datetime
-from utils import dynamodb
+from utils import dynamodb, utils
 
 # Staging
 DEBUG = os.getenv('INSTABOT_DEBUG')
@@ -55,11 +55,8 @@ def get_stories_by_user(username):
         user_id = INSTA_CLIENT.user_id_from_username(username)
         user_stories = INSTA_CLIENT.user_stories(user_id)
 
-        print(LAST_STORY_ID) # debug
-
         if user_stories:
             if str(user_stories[-1].id) == LAST_STORY_ID:
-                print('Using private API') # debug
                 user_stories = INSTA_CLIENT.user_stories_v1(user_id)
 
         logger.info(f'{username} Number of Stories: {len(user_stories)}')
@@ -135,6 +132,7 @@ async def send_message_if_story():
     
     await DISCORD_CLIENT.wait_until_ready()
     channel = DISCORD_CLIENT.get_channel(id=int(INSTABOT_CONFIG['discord_channel_id']))
+    guild =  DISCORD_CLIENT.get_guild(id=int(INSTABOT_CONFIG['discord_server_id']))
         
     while not DISCORD_CLIENT.is_closed():
         INSTABOT_CONFIG = load_config()
@@ -152,12 +150,20 @@ async def send_message_if_story():
                     
                     msg = f'New Story from **{insta_user}** date: {date} url: {url}'
 
-                    for discord_user_id in INSTABOT_CONFIG['discord_users_ids']:
-                        discord_user =  DISCORD_CLIENT.get_user(int(discord_user_id))
-                        msg += f' {discord_user.mention} '
+                    # mention users
+                    #for discord_user_id in INSTABOT_CONFIG['discord_users_ids']:
+                    #    discord_user =  DISCORD_CLIENT.get_user(int(discord_user_id))
+                    #    msg += f' {discord_user.mention} '
                     
+                    # mention roles
+                    for discord_role_id in INSTABOT_CONFIG['discord_role_ids']:
+                        discord_role =  guild.get_role(int(discord_role_id))
+                        msg += f' {discord_role.mention} '
+                    
+                    # send message. Try 4 times
                     logger.info(msg)
-                    await channel.send(msg)
+                    await utils.send_discord_message_attemps(channel, msg, 4, logger)
+
             else:
                 # An exception raised before and new_stories is set to None
                 instagram_login()
