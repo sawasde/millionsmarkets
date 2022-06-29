@@ -78,14 +78,34 @@ def get_stories_by_user(username):
     finally:
         return result
 
+def see_stories(new_stories):
+    stories_seen = False
+    try:
+        # See new Stories pks
+        new_stories_pks = [int(info[1]) for info in new_stories.values()]
+        if new_stories_pks:
+            if INSTA_CLIENT.story_seen(new_stories_pks):
+                logger.info(f'Stories seen: {new_stories_pks}')
+                stories_seen = True
+            else:
+                logger.error(f'Error trying to see Stories: {new_stories_pks}')
+                stories_seen = False
+
+    except Exception as e:
+        logger.error(e)
+        stories_seen = False
+
+    finally:
+        return stories_seen
+
 
 def update_stories(username, all_user_stories):
     global LAST_STORY_ID
     logger.info(f'Update Stories for: {username}')
 
     try:
-
         new_stories = {}
+        stories_seen = False
         current_month = datetime.now().month
         current_year = datetime.now().year
 
@@ -104,23 +124,21 @@ def update_stories(username, all_user_stories):
             if id not in stories_log:
                 new_stories[id] = info
                 stories_log.append(id)
-                
-                dynamodb.put_item(  AWS_DYNAMO_SESSION, 
-                                    'mm_instabot', 
-                                    {'feature' : f'{username}_stories_{current_year}_{current_month}',
-                                    'value' : stories_log})
         
-        # See new Stories pks
-        new_stories_pks = [int(info[1]) for info in new_stories.values()]
-        if new_stories_pks:
-            if INSTA_CLIENT.story_seen(new_stories_pks):
-                logger.info(f'Stories seen: {new_stories_pks}')
-            else:
-                logger.error(f'Error trying to see Stories: {new_stories_pks}')
+        # See Stories
+        stories_seen = see_stories(new_stories)
+
+        # If story are correctly seen then instagram is ok, then it is saved in DB
+        if stories_seen:
+            # Put it to dynamo DB
+            dynamodb.put_item(  AWS_DYNAMO_SESSION, 
+                                'mm_instabot', 
+                                {'feature' : f'{username}_stories_{current_year}_{current_month}',
+                                'value' : stories_log})
     
     except Exception as e:
-        new_stories = None
         logger.error(e)
+        new_stories = None
 
     finally:
         return new_stories
