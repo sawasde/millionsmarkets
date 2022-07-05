@@ -86,10 +86,7 @@ def see_stories(new_stories):
         if new_stories_pks:
             if INSTA_CLIENT.story_seen(new_stories_pks):
                 logger.info(f'Stories seen: {new_stories_pks}')
-                stories_seen = True
-            else:
-                logger.error(f'Error trying to see Stories: {new_stories_pks}')
-                stories_seen = False
+            stories_seen = True
 
     except Exception as e:
         logger.error(e)
