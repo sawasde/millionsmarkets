@@ -74,6 +74,8 @@ def get_stories_by_user(username):
     except Exception as e:
         result = {}
         logger.error(e)
+        if 'login_required' in str(e):
+            instagram_login()
     
     finally:
         return result
@@ -91,6 +93,8 @@ def see_stories(new_stories):
     except Exception as e:
         logger.error(e)
         stories_seen = False
+        if 'login_required' in str(e):
+            instagram_login()
 
     finally:
         return stories_seen
@@ -99,10 +103,9 @@ def see_stories(new_stories):
 def update_stories(username, all_user_stories):
     global LAST_STORY_ID
     logger.info(f'Update Stories for: {username}')
+    new_stories = {}
 
     try:
-        new_stories = {}
-        stories_seen = False
         current_month = datetime.now().month
         current_year = datetime.now().year
 
@@ -135,7 +138,8 @@ def update_stories(username, all_user_stories):
     
     except Exception as e:
         logger.error(e)
-        new_stories = None
+        if 'login_required' in str(e):
+            instagram_login()
 
     finally:
         return new_stories
@@ -157,31 +161,25 @@ async def send_message_if_story():
             all_user_stories = get_stories_by_user(insta_user)
             new_stories = update_stories(insta_user, all_user_stories)
 
-            if isinstance(new_stories, dict):
+            for id, info in new_stories.items():
 
-                for id, info in new_stories.items():
+                url, pk, date = info
+                
+                msg = f'New Story from **{insta_user}** date: {date} url: {url}'
 
-                    url, pk, date = info
-                    
-                    msg = f'New Story from **{insta_user}** date: {date} url: {url}'
-
-                    # mention users
-                    #for discord_user_id in INSTABOT_CONFIG['discord_users_ids']:
-                    #    discord_user =  DISCORD_CLIENT.get_user(int(discord_user_id))
-                    #    msg += f' {discord_user.mention} '
-                    
-                    # mention roles
-                    for discord_role_id in INSTABOT_CONFIG['discord_role_ids']:
-                        discord_role =  guild.get_role(int(discord_role_id))
-                        msg += f' {discord_role.mention} '
-                    
-                    # send message. Try 4 times
-                    logger.info(msg)
-                    await utils.send_discord_message_attemps(channel, msg, 4, logger)
-
-            else:
-                # An exception raised before and new_stories is set to None
-                instagram_login()
+                # mention users
+                #for discord_user_id in INSTABOT_CONFIG['discord_users_ids']:
+                #    discord_user =  DISCORD_CLIENT.get_user(int(discord_user_id))
+                #    msg += f' {discord_user.mention} '
+                
+                # mention roles
+                for discord_role_id in INSTABOT_CONFIG['discord_role_ids']:
+                    discord_role =  guild.get_role(int(discord_role_id))
+                    msg += f' {discord_role.mention} '
+                
+                # send message. Try 4 times
+                logger.info(msg)
+                await utils.send_discord_message_attemps(channel, msg, 4, logger)
 
 
 @DISCORD_CLIENT.event
