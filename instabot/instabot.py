@@ -2,6 +2,7 @@ import os
 import discord
 import asyncio
 import instagrapi
+import time
 from loguru import logger
 from datetime import datetime
 from utils import dynamodb, utils
@@ -33,6 +34,7 @@ def instagram_login():
     
     INSTA_CLIENT = instagrapi.Client()
     INSTA_CLIENT.login(INSTA_USER, INSTA_PWD)
+    time.sleep(44)
 
 
 @logger.catch
@@ -74,8 +76,6 @@ def get_stories_by_user(username):
     except Exception as e:
         result = {}
         logger.error(e)
-        if 'login_required' in str(e):
-            instagram_login()
     
     finally:
         return result
