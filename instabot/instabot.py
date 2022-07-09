@@ -6,9 +6,10 @@ import time
 from loguru import logger
 from datetime import datetime
 from utils import dynamodb, utils
+import pyotp
 
 # Staging
-DEBUG = os.getenv('INSTABOT_DEBUG')
+DEBUG = bool(int(os.getenv('INSTABOT_DEBUG')))
 LAST_STORY_ID = 0
 
 # Instagram vars
@@ -24,17 +25,27 @@ DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session()
 
-# Genral vars
+# General vars
 INSTABOT_CONFIG = {}
+INSTA_CLIENT = None
 
 @logger.catch
 def instagram_login():
     global INSTA_CLIENT
-    logger.info(f'Log in Instagram')
-    
+
+    logger.info(f'Log in instagram')
     INSTA_CLIENT = instagrapi.Client()
-    INSTA_CLIENT.login(INSTA_USER, INSTA_PWD)
-    time.sleep(44)
+
+    logger.info(f'Get verification code')
+    totp = pyotp.TOTP(os.getenv('INSTA_OTP'))
+    code = totp.now()
+
+    if DEBUG:
+        logger.info(f'TOPT code {code}')
+
+    time.sleep(4)
+    INSTA_CLIENT.login(username=INSTA_USER, password=INSTA_PWD, verification_code=code)
+    time.sleep(4)
 
 
 @logger.catch
