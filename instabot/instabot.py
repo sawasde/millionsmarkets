@@ -7,6 +7,7 @@ from loguru import logger
 from datetime import datetime
 from utils import dynamodb, utils
 import pyotp
+import challenge
 
 # Staging
 DEBUG = bool(int(os.getenv('INSTABOT_DEBUG')))
@@ -27,14 +28,13 @@ AWS_DYNAMO_SESSION = dynamodb.create_session()
 
 # General vars
 INSTABOT_CONFIG = {}
-INSTA_CLIENT = None
+INSTA_CLIENT = instagrapi.Client()
 
 @logger.catch
 def instagram_login():
     global INSTA_CLIENT
 
     logger.info(f'Log in instagram')
-    INSTA_CLIENT = instagrapi.Client()
 
     logger.info(f'Get verification code')
     totp = pyotp.TOTP(os.getenv('INSTA_OTP'))
@@ -44,8 +44,12 @@ def instagram_login():
         logger.info(f'TOPT code {code}')
 
     time.sleep(4)
+    logger.info(f'Login instagram {INSTA_USER}')
     INSTA_CLIENT.login(username=INSTA_USER, password=INSTA_PWD, verification_code=code)
     time.sleep(4)
+
+    logger.info('Set Challenge handler')
+    INSTA_CLIENT.challenge_code_handler = challenge.get_code_from_email(INSTA_USER, logger)
 
 
 @logger.catch
@@ -87,6 +91,8 @@ def get_stories_by_user(username):
     except Exception as e:
         result = {}
         logger.error(e)
+        if 'login_required' in str(e):
+            instagram_login()
     
     finally:
         return result
