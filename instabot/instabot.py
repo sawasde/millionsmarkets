@@ -23,6 +23,7 @@ DISCORD_INTENTS = discord.Intents.default()
 DISCORD_INTENTS.members = True
 DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
 
+
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session()
 
@@ -91,8 +92,7 @@ def get_stories_by_user(username):
     except Exception as e:
         result = {}
         logger.error(e)
-        if 'login_required' in str(e):
-            instagram_login()
+        instagram_login()
     
     finally:
         return result
