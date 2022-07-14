@@ -1,14 +1,13 @@
 #from utils import dynamodb
 from loguru import logger
 import os
-import instagrapi
 import discord
 
 # AWS Dynamo
 #AWS_DYNAMO_SESSION = dynamodb.create_session()
 
 # Discord vars
-DISCORD_BOT_TOKEN = os.getenv('INSTABOT_TOKEN')
+DISCORD_BOT_TOKEN = os.getenv('COSMOBOT_TOKEN')
 DISCORD_INTENTS = discord.Intents.default()
 DISCORD_INTENTS.members = True
 DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
@@ -46,5 +45,3 @@ async def on_ready():
 
     print(role.mention)
     a = await channel.send(role.mention)
-
-#DISCORD_CLIENT.run(DISCORD_BOT_TOKEN)

@@ -103,8 +103,9 @@ def get_timestamp(multiplier=1):
 
 	return result*multiplier
 
-#def timestamp_to_wee	
-#datetime.date(2010, 6, 16).isocalendar()[1]
+@logger.catch
+def round_float_num(num, dig):
+	return float('%.{}f'.format(dig) % num)
 
 @logger.catch
 def timestamp_to_date(tms):
