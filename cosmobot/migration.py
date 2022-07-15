@@ -14,7 +14,7 @@ def launch():
 
         print('migrating', crypto)
 
-        df = pd.read_csv('cosmobot/historical_assets/BTCBUSD.csv')
+        df = pd.read_csv(f'cosmobot/assets/{crypto}.csv')
         #tms,ptrend,mtrend,strend,pclose,pd_limit,pz_limit
         item_list = []
         for i, row in df.iterrows():

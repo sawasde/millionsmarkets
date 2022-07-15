@@ -38,7 +38,6 @@ def load_config():
 
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose, binplotter=False, pclose_limit_ft=False):
-    logger.info(f'Put Planet info for {symbol}')
 
     timestamp = int(utils.get_timestamp(multiplier=1))
     date = utils.timestamp_to_date(timestamp)
