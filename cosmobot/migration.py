@@ -47,14 +47,11 @@ def launch():
         table_symbol = crypto[:3] + crypto[4:] + 'T'
 
         if TEST:
-            #if year != 2022 or week <= 17:
-            #    continue
             dynamodb.put_item(AWS_DYNAMO_SESSION, f'cosmobot_historical_{table_symbol}_test', item_list[0])
             break
         else:
             print(len(item_list))
             dynamodb.batch_put_items(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{table_symbol}', item_list)
-            #dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{table_symbol}', item)
 
 
 if __name__ == '__main__':

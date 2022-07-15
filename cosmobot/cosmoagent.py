@@ -8,6 +8,7 @@ import json
 
 # local imports
 from utils import utils, trends, bintrade, dynamodb
+from cosmobot import cosmomixins
 
 
 #Staging
@@ -36,16 +37,15 @@ def load_config():
         return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmoagent', {'feature' : 'prod_config'})
 
 
-@utils.logger.catch
+@logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose, binplotter=False, pclose_limit_ft=False):
 
-    timestamp = int(utils.get_timestamp(multiplier=1))
-    date = utils.timestamp_to_date(timestamp)
-    week = date.isocalendar()[1]
-    year = date.isocalendar()[0]
-    iweek = f'{year}_{week}'
-    to_put = {  'week' : iweek, 
-                'timestamp' : timestamp,
+    cosmo_time = cosmomixins.get_cosmobot_time()
+    cosmo_week = cosmo_time[0]
+    cosmo_timestamp = cosmo_time[3]
+
+    to_put = {  'week' : cosmo_week, 
+                'timestamp' : cosmo_timestamp,
                 'ptrend' : ptrend,
                 'mtrend' : mtrend,
                 'strend' : strend,
@@ -61,7 +61,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
         dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}', item)
 
 
-@utils.logger.catch
+@logger.catch
 def get_planet_trend(symbol):
     logger.info(f'Get Planet info for {symbol}')
 
@@ -77,7 +77,7 @@ def get_planet_trend(symbol):
 
 
 
-@utils.logger.catch
+@logger.catch
 def loop():
     global ALL_CRYPTO_PRICE
     global COSMOAGENT_CONFIG
