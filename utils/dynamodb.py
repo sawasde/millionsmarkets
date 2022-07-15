@@ -33,7 +33,19 @@ def put_item(dyn_session, table_name, item, region='us-east-1'):
     response = table.put_item(Item=item)
 
     return response
+
+@logger.catch
+def batch_put_items(dyn_session, table_name, item_list, region='us-east-1'):
     
+    dynamodb = dyn_session.resource('dynamodb', region_name=region)
+    table = dynamodb.Table(table_name)
+
+    with table.batch_writer() as batch:
+        for item in item_list:
+            batch.put_item(
+                Item=item
+        )
+
 @logger.catch
 def query_items(dyn_session, table_name, key, value, region='us-east-1'):
 

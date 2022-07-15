@@ -36,7 +36,6 @@ def load_config():
         return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmoagent', {'feature' : 'prod_config'})
 
 
-
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose, binplotter=False, pclose_limit_ft=False):
     logger.info(f'Put Planet info for {symbol}')
