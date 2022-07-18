@@ -15,15 +15,7 @@ DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
 
 def launch():
     print('here')
-    #item = dynamodb.query_items(AWS_DYNAMO_SESSION, 'mm_test', 'date', '2022_6')
-    #print(item)
 
-    #INSTA_USER = os.getenv('INSTA_USER')
-    #INSTA_PWD = os.getenv('INSTA_PWD')
-    #INSTA_CLIENT = instagrapi.Client()
-    #INSTA_CLIENT.login(INSTA_USER, INSTA_PWD)
-    #user_id = INSTA_CLIENT.user_id_from_username('alturiano')
-    #print(user_id)
 
 @DISCORD_CLIENT.event
 async def on_ready():

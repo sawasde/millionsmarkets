@@ -47,16 +47,16 @@ def batch_put_items(dyn_session, table_name, item_list, region='us-east-1'):
         )
 
 @logger.catch
-def query_items(dyn_session, table_name, pkey, pvalue, pcond='eq', type='partition', skey=None, svalue=None, scond='eq', region='us-east-1'):
+def query_items(dyn_session, table_name, pkey, pvalue, type='partition', skey=None, svalue=None, scond='eq', region='us-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
 
     if type == 'partition':
-        pkey_obj = getattr(Key(pkey), pcond)
+        pkey_obj = getattr(Key(pkey), 'eq')
         filtering_exp =  pkey_obj(pvalue)
     elif type == 'both':
-        pkey_obj = getattr(Key(pkey), pcond)
+        pkey_obj = getattr(Key(pkey), 'eq')
         skey_obj = getattr(Key(skey), scond)
         filtering_exp = pkey_obj(pvalue) & skey_obj(svalue)
 
