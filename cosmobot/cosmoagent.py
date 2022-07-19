@@ -27,16 +27,6 @@ COSMOAGENT_CONFIG = {}
 
 
 @utils.logger.catch
-def load_config():
-    utils.logger.info(f'Load Config dict')
-   
-    if DEBUG:
-        return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmoagent', {'feature' : 'test_config'})
-    else:
-        return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmoagent', {'feature' : 'prod_config'})
-
-
-@utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
 
     cosmo_time = cosmomixins.get_cosmobot_time()
@@ -85,7 +75,7 @@ def loop():
     ALL_CRYPTO_PRICE = BIN_CLIENT.get_all_tickers()
 
 	# Load config in loop
-    COSMOAGENT_CONFIG = load_config()
+    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmoagent' , DEBUG)
 
     # loop crypto
     for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
@@ -99,7 +89,7 @@ def launch():
     
     print (utils.logger)
     # Load config
-    COSMOAGENT_CONFIG = load_config()
+    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmoagent' , DEBUG)
 
     # Log path
     utils.logger_path(COSMOAGENT_CONFIG['log_path'])

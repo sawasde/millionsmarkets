@@ -1,16 +1,26 @@
-from loguru import logger
+from utils import utils
 from boto3.dynamodb.conditions import Key
 import boto3
 import os
 
-@logger.catch
+@utils.logger.catch
+def load_feature_value_config(dyn_session, table, debug=True):
+    utils.logger.info(f'Load Config dict for {table}')
+   
+    if debug:
+        return get_item(dyn_session, table, {'feature' : 'test_config'})
+    else:
+        return get_item(dyn_session, table, {'feature' : 'prod_config'})
+
+
+@utils.logger.catch
 def create_session():
     return boto3.Session(
                             aws_access_key_id=os.getenv('AWS_ACCESS_ID'),
                             aws_secret_access_key=os.getenv('AWS_SECRET_KEY')
                         )
 
-@logger.catch
+@utils.logger.catch
 def get_item(dyn_session, table_name, key, region='us-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
@@ -24,7 +34,7 @@ def get_item(dyn_session, table_name, key, region='us-east-1'):
         return None
 
 
-@logger.catch
+@utils.logger.catch
 def put_item(dyn_session, table_name, item, region='us-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
@@ -34,7 +44,7 @@ def put_item(dyn_session, table_name, item, region='us-east-1'):
 
     return response
 
-@logger.catch
+@utils.logger.catch
 def batch_put_items(dyn_session, table_name, item_list, region='us-east-1'):
     
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
@@ -46,7 +56,7 @@ def batch_put_items(dyn_session, table_name, item_list, region='us-east-1'):
                 Item=item
         )
 
-@logger.catch
+@utils.logger.catch
 def query_items(dyn_session, table_name, pkey, pvalue, type='partition', skey=None, svalue=None, scond='eq', region='us-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)

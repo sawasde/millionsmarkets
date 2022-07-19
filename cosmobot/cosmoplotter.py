@@ -24,7 +24,6 @@ def plotter(symbol, df, day):
         return
 
     day_tms = utils.date_ago_timestmp(xtb_tms=False, days=int(day))
-    print(symbol, day, day_tms)
 
     df_temp = df[df['timestamp'] >= day_tms]
 
@@ -72,8 +71,7 @@ def main(unit_test=False, days_ago=[31,13]):
             # Check DFs
             utils.logger.info('Checking DFs')
             csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
-            df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, weeks)
-            return
+            df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, weeks, 521)
 
             # Plot
             utils.logger.info('Plotting ...')

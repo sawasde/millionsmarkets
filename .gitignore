@@ -9,5 +9,5 @@
 *__pycache__*
 
 #assets/
-.png
-.csvs
+*.png
+*.csv
