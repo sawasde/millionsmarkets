@@ -11,50 +11,37 @@ AWS_DYNAMO_SESSION = dynamodb.create_session()
 # General vars
 COSMOAGENT_CONFIG = {}
 CHART_BASE_PATH = 'cosmobot/assets/'
+CSV_ASSET_PATH = '{}{}.csv'
 TMS_TRESSHOLD_SEC = 260
 
 
-@logger.catch
-def check_time(symbol, df):
-    tms = int(utils.get_timestamp(multiplier=1))
-    last_tms = int(df['timestamp'].iloc[-1])
-
-    diff = tms - last_tms
-    print(symbol, 'Last tms:', utils.timestamp_to_date(last_tms), 'Diff:', diff, 'seconds')
-
-    if diff > TMS_TRESSHOLD_SEC:
-        utils.logger.error(f'tms not sync. {diff} diff seconds')
-        utils.logger.error(f'date: {utils.timestamp_to_date(last_tms)}')
-
-
 
 @logger.catch
-def plotter(symbol, df, days_ago=[13, 31]):
+def plotter(symbol, df, day):
 
     df['zero_bound'] = 0
 
     if len(df) < 2:
         return
 
-    for day in days_ago:
+    day_tms = utils.date_ago_timestmp(xtb_tms=False, days=int(day))
+    print(symbol, day, day_tms)
 
-        day_tms = utils.date_ago_timestmp(xtb_tms=False, days=int(day))
-        print(symbol, day, day_tms)
+    df_temp = df[df['timestamp'] >= day_tms]
 
-        df_temp = df[df['timestamp'] >= day_tms]
+    # AREA STUFF
+    df_temp = utils.integrate_area_below(df_temp, yaxis='ptrend', dx=1)
 
-        # AREA STUFF
-        df_temp = utils.integrate_area_below(df_temp, yaxis='ptrend', dx=1)
+    png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
 
-        png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
+    utils.plot_sublots( df=df_temp, 
+                        plot_features_dicts=[{'pclose':'g', 'pz_limit':'b', 'pd_limit': 'r'},
+                                            {'area':'r', 'zero_bound':'b'},
+                                            {'mtrend':'g', 'zero_bound':'b'},
+                                            ],
+                        xaxis='timestamp', save_picture=png_file_path_temp, style='-', show=False)
+    print(symbol, day, 'PLOT SAVED')
 
-        utils.plot_sublots( df=df_temp, 
-                            plot_features_dicts=[{'pclose':'g', 'pz_limit':'b', 'pd_limit': 'r'},
-                                                {'area':'r', 'zero_bound':'b'},
-                                                {'mtrend':'g', 'zero_bound':'b'},
-                                                ],
-                            xaxis='timestamp', save_picture=png_file_path_temp, style='-', show=False)
-        print(symbol, day, 'PLOT SAVED')
 
 
 @logger.catch
@@ -69,7 +56,7 @@ def remove_all_plots():
 
 
 @logger.catch
-def main(unit_test=False):
+def main(unit_test=False, days_ago=[31,13]):
     ''' Main method '''
 
     # Remove previous plots
@@ -78,20 +65,19 @@ def main(unit_test=False):
 
     for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
 
-        # Get df
-        logger.info(f'Get info for {symbol}')
-        #df = cosmomixins.cosmobot_historical_week_to_df(AWS_DYNAMO_SESSION, symbol, 1)
-        df = cosmomixins.cosmobot_historical_to_df(AWS_DYNAMO_SESSION, symbol, 5)#, utils.date_ago_timestmp(xtb_tms=False, days=int(13)))
+        for day in days_ago:
+            # Get df
+            weeks = 1 + (day // 7)
+            logger.info(f'Get info for {symbol} days: {day} weeks: {weeks}')
 
-        print(df['timestamp'].iloc[0],df['timestamp'].iloc[-1])
-        #return
-        # Check Time
-        logger.info('Checking time ...')
-        check_time(symbol, df)
+            # Check DFs
+            logger.info('Checking DFs')
+            csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
+            df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, weeks)
 
-        # Plot
-        logger.info('Plotting ...')
-        plotter(symbol, df)
+            # Plot
+            logger.info('Plotting ...')
+            plotter(symbol, df, day)
 
 
 @logger.catch

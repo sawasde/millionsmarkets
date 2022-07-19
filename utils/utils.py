@@ -110,10 +110,12 @@ def get_timestamp(multiplier=1):
 def round_float_num(num, dig):
     return float('%.{}f'.format(dig) % num)
 
+
 @logger.catch
-def timestamp_to_date(tms):
+def timestamp_to_date(tms, tz='America/Bogota'):
     ''' Take time in hours, days, weeks, months ago and return the timestamp in ms'''
-    return (dt.datetime.fromtimestamp(tms))
+    return (dt.datetime.fromtimestamp(tms, tz=pytz.timezone(tz)))
+
 
 @logger.catch
 def date_now(tp=True, tz='America/Bogota'):

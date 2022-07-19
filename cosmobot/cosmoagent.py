@@ -38,11 +38,11 @@ def load_config():
 
 
 @logger.catch
-def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose, binplotter=False, pclose_limit_ft=False):
+def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
 
     cosmo_time = cosmomixins.get_cosmobot_time()
     cosmo_week = cosmo_time[0]
-    cosmo_timestamp = cosmo_time[3]
+    cosmo_timestamp = cosmo_time[4]
 
     to_put = {  'week' : cosmo_week, 
                 'timestamp' : cosmo_timestamp,
