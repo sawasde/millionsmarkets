@@ -4,7 +4,7 @@ import os
 from utils import utils, dynamodb
 
 
-@logger.catch
+@utils.logger.catch
 def get_cosmobot_time(timestamp=None):
 
     if not timestamp:
@@ -16,7 +16,7 @@ def get_cosmobot_time(timestamp=None):
     return f'{year}_{week}', week, year, date, timestamp
 
 
-@logger.catch
+@utils.logger.catch
 def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
 
     dfs = []
@@ -70,7 +70,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
     return df_result
 
 
-@logger.catch
+@utils.logger.catch
 def aux_format_dynamo_df(df):
 
     to_float_cols = ['ptrend', 'mtrend', 'strend', 'pclose', 'pd_limit', 'pz_limit']
@@ -89,7 +89,7 @@ def aux_format_dynamo_df(df):
 
 
 
-@logger.catch
+@utils.logger.catch
 def check_time(symbol, df, time_diff=260):
     tms = int(utils.get_timestamp(multiplier=1))
     last_tms = int(df['timestamp'].iloc[-1])
@@ -105,7 +105,7 @@ def check_time(symbol, df, time_diff=260):
     return True
 
 
-@logger.catch
+@utils.logger.catch
 def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save_csv=True):
     
     if os.path.exists(static_path):

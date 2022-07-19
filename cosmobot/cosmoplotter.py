@@ -15,7 +15,7 @@ TMS_TRESSHOLD_SEC = 260
 
 
 
-@logger.catch
+@utils.logger.catch
 def plotter(symbol, df, day):
 
     df['zero_bound'] = 0
@@ -43,7 +43,7 @@ def plotter(symbol, df, day):
 
 
 
-@logger.catch
+@utils.logger.catch
 def remove_all_plots():
 
     for root, dirs, files in os.walk(CHART_BASE_PATH):
@@ -54,7 +54,7 @@ def remove_all_plots():
                 os.remove(filename)
 
 
-@logger.catch
+@utils.logger.catch
 def main(unit_test=False, days_ago=[31,13]):
     ''' Main method '''
 
@@ -80,7 +80,7 @@ def main(unit_test=False, days_ago=[31,13]):
             plotter(symbol, df, day)
 
 
-@logger.catch
+@utils.logger.catch
 def launch():
     global COSMOAGENT_CONFIG
     

@@ -26,7 +26,7 @@ AWS_DYNAMO_SESSION = dynamodb.create_session()
 COSMOAGENT_CONFIG = {}
 
 
-@logger.catch
+@utils.logger.catch
 def load_config():
     utils.logger.info(f'Load Config dict')
    
@@ -36,7 +36,7 @@ def load_config():
         return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmoagent', {'feature' : 'prod_config'})
 
 
-@logger.catch
+@utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
 
     cosmo_time = cosmomixins.get_cosmobot_time()
@@ -60,7 +60,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
         dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}', item)
 
 
-@logger.catch
+@utils.logger.catch
 def get_planet_trend(symbol):
     utils.logger.info(f'Get Planet info for {symbol}')
 
@@ -76,7 +76,7 @@ def get_planet_trend(symbol):
 
 
 
-@logger.catch
+@utils.logger.catch
 def loop():
     global ALL_CRYPTO_PRICE
     global COSMOAGENT_CONFIG
@@ -92,11 +92,12 @@ def loop():
         get_planet_trend(symbol)
 
 
-@logger.catch
+@utils.logger.catch
 def launch():
     global COSMOAGENT_CONFIG
     global BIN_CLIENT
     
+    print (utils.logger)
     # Load config
     COSMOAGENT_CONFIG = load_config()
 
