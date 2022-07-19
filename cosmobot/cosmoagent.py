@@ -1,6 +1,5 @@
 from twisted.internet import task, reactor
 import pandas as pd
-from loguru import logger
 from binance.client import Client
 from decimal import Decimal
 import os
@@ -29,7 +28,7 @@ COSMOAGENT_CONFIG = {}
 
 @logger.catch
 def load_config():
-    logger.info(f'Load Config dict')
+    utils.logger.info(f'Load Config dict')
    
     if DEBUG:
         return dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmoagent', {'feature' : 'test_config'})
@@ -63,7 +62,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
 @logger.catch
 def get_planet_trend(symbol):
-    logger.info(f'Get Planet info for {symbol}')
+    utils.logger.info(f'Get Planet info for {symbol}')
 
 
     # 1day data
@@ -102,13 +101,13 @@ def launch():
     COSMOAGENT_CONFIG = load_config()
 
     # Log path
-    logger.add(COSMOAGENT_CONFIG['log_path'])
+    utils.logger_path(COSMOAGENT_CONFIG['log_path'])
 
     # Log config
-    logger.info(COSMOAGENT_CONFIG)
+    utils.logger.info(COSMOAGENT_CONFIG)
 
     #Binance
-    logger.info('AUTH BINANCE')
+    utils.logger.info('AUTH BINANCE')
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
 
     if DEBUG:

@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import gc
 
+
+@logger.catch
+def logger_path(path):
+	''' the logger path'''
+	logger.add(path)
+
 # Discord Functions
 async def send_discord_message_attemps(channel, msg, attemps=4, logger=logger, delay=4):
     try:

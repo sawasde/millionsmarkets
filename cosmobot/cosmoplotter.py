@@ -1,4 +1,3 @@
-from loguru import logger
 import os
 import pandas as pd
 # local imports
@@ -60,7 +59,7 @@ def main(unit_test=False, days_ago=[31,13]):
     ''' Main method '''
 
     # Remove previous plots
-    logger.info('Removing plots ...')
+    utils.logger.info('Removing plots ...')
     remove_all_plots()
 
     for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
@@ -68,16 +67,16 @@ def main(unit_test=False, days_ago=[31,13]):
         for day in days_ago:
             # Get df
             weeks = 1 + (day // 7)
-            logger.info(f'Get info for {symbol} days: {day} weeks: {weeks}')
+            utils.logger.info(f'Get info for {symbol} days: {day} weeks: {weeks}')
 
             # Check DFs
-            logger.info('Checking DFs')
+            utils.logger.info('Checking DFs')
             csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
             df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, weeks)
             return
 
             # Plot
-            logger.info('Plotting ...')
+            utils.logger.info('Plotting ...')
             plotter(symbol, df, day)
 
 
@@ -89,7 +88,7 @@ def launch():
     COSMOAGENT_CONFIG = dynamodb.get_item(AWS_DYNAMO_SESSION, 'mm_cosmobot', {'feature' : 'prod_config'})
 
     # Log config
-    logger.info(COSMOAGENT_CONFIG)
+    utils.logger.info(COSMOAGENT_CONFIG)
 
     main()
     

@@ -1,5 +1,4 @@
 from time import time
-from loguru import logger
 import pandas as pd
 import os
 from utils import utils, dynamodb
@@ -96,11 +95,11 @@ def check_time(symbol, df, time_diff=260):
     last_tms = int(df['timestamp'].iloc[-1])
 
     diff = tms - last_tms
-    logger.info(symbol, 'Last tms:', utils.timestamp_to_date(last_tms), 'Diff:', diff, 'seconds')
+    utils.logger.info(symbol, 'Last tms:', utils.timestamp_to_date(last_tms), 'Diff:', diff, 'seconds')
 
     if diff > time_diff:
-        logger.error(f'tms not sync. {diff} diff seconds')
-        logger.error(f'date: {utils.timestamp_to_date(last_tms)}')
+        utils.logger.error(f'tms not sync. {diff} diff seconds')
+        utils.logger.error(f'date: {utils.timestamp_to_date(last_tms)}')
         return False
     
     return True
@@ -110,7 +109,7 @@ def check_time(symbol, df, time_diff=260):
 def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save_csv=True):
     
     if os.path.exists(static_path):
-        logger.info(f'Found CSV {static_path}')
+        utils.logger.info(f'Found CSV {static_path}')
         static_df = pd.read_csv(static_path)
         static_df = aux_format_dynamo_df(static_df)
 
@@ -118,22 +117,22 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
 
 
         if check_time(symbol, static_df, time_diff):
-            logger.info(f'{symbol}. timestamps well coupled, using only CSV')
+            utils.logger.info(f'{symbol}. timestamps well coupled, using only CSV')
             df_result = static_df.copy()
         
         else:
-            logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
+            utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
             dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, last_tms)
 
             df_result = pd.concat([static_df, dynamo_df], ignore_index=True)
             df_result = df_result.sort_values('timestamp')
 
     else:
-        logger.info(f'{symbol}. CSV not found, using pure dynamo')
+        utils.logger.info(f'{symbol}. CSV not found, using pure dynamo')
         df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks)
     
     if save_csv:
-        logger.info(f'saving CSV {static_path}')
+        utils.logger.info(f'saving CSV {static_path}')
         df_result.to_csv(static_path, index=False)
 
     return df_result

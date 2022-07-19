@@ -1,8 +1,7 @@
-#from utils import dynamodb
-from loguru import logger
 import os
 import discord
 
+from utils import utils, dynamodb
 # AWS Dynamo
 #AWS_DYNAMO_SESSION = dynamodb.create_session()
 
@@ -19,7 +18,7 @@ def launch():
 
 @DISCORD_CLIENT.event
 async def on_ready():
-    logger.info(f'Logged in as {DISCORD_CLIENT.user.name}')
+    utils.logger.info(f'Logged in as {DISCORD_CLIENT.user.name}')
     
     await DISCORD_CLIENT.wait_until_ready()
     channel = DISCORD_CLIENT.get_channel(id=int(983498005321764926))
