@@ -40,7 +40,7 @@ def plotter(symbol, df, day):
                                             {'mtrend':'g', 'zero_bound':'b'},
                                             ],
                         xaxis='timestamp', save_picture=png_file_path_temp, style='-', show=False)
-    print(symbol, day, 'PLOT SAVED')
+    (symbol, day, 'PLOT SAVED')
 
 
 
@@ -74,6 +74,7 @@ def main(unit_test=False, days_ago=[31,13]):
             logger.info('Checking DFs')
             csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
             df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, weeks)
+            return
 
             # Plot
             logger.info('Plotting ...')

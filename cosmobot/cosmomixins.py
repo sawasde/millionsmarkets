@@ -78,7 +78,8 @@ def aux_format_dynamo_df(df):
     df_result = df.copy()
     
     # Drop week columns
-    df_result.drop(['week'], inplace=True, axis=1)
+    if 'week' in df_result.columns:
+        df_result.drop(['week'], inplace=True, axis=1)
 
     # Format cols
     df_result[to_float_cols] = df_result[to_float_cols].astype('float')
@@ -106,14 +107,17 @@ def check_time(symbol, df, time_diff=260):
 
 
 @logger.catch
-def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, save_csv=True):
+def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save_csv=True):
     
     if os.path.exists(static_path):
         logger.info(f'Found CSV {static_path}')
         static_df = pd.read_csv(static_path)
-        last_tms = static_df['timestamp'].iloc[-1]
+        static_df = aux_format_dynamo_df(static_df)
 
-        if check_time(symbol, static_df):
+        last_tms = int(static_df['timestamp'].iloc[-1])
+
+
+        if check_time(symbol, static_df, time_diff):
             logger.info(f'{symbol}. timestamps well coupled, using only CSV')
             df_result = static_df.copy()
         
