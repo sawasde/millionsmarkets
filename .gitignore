@@ -8,4 +8,6 @@
 #cache
 *__pycache__*
 
-assets/
+#assets/
+.png
+.csvs
