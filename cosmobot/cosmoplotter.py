@@ -81,10 +81,10 @@ def main(unit_test=False):
         # Get df
         logger.info(f'Get info for {symbol}')
         #df = cosmomixins.cosmobot_historical_week_to_df(AWS_DYNAMO_SESSION, symbol, 1)
-        df = cosmomixins.cosmobot_historical_to_df(AWS_DYNAMO_SESSION, symbol, 1)#, utils.date_ago_timestmp(xtb_tms=False, days=int(13)))
+        df = cosmomixins.cosmobot_historical_to_df(AWS_DYNAMO_SESSION, symbol, 5)#, utils.date_ago_timestmp(xtb_tms=False, days=int(13)))
 
         print(df['timestamp'].iloc[0],df['timestamp'].iloc[-1])
-        return
+        #return
         # Check Time
         logger.info('Checking time ...')
         check_time(symbol, df)

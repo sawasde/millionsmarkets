@@ -31,6 +31,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
     last_n_weeks = []
 
     for i in range(0, weeks):
+
         week_delta = week_now - i
         year_delta = year_now
 
@@ -39,7 +40,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
             week_delta = 52 - abs(week_delta)
             year_delta = year_now -1
 
-    last_n_weeks.append(f'{year_delta}_{week_delta}')
+        last_n_weeks.append(f'{year_delta}_{week_delta}')
 
     for week in last_n_weeks:
 
