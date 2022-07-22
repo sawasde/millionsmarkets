@@ -88,6 +88,22 @@ def aux_format_dynamo_df(df):
     return df_result
 
 
+@utils.logger.catch
+def aux_format_plotter_df(df, day=31, yaxis='ptrend'):
+    
+    df['zero_bound'] = 0
+
+    if len(df) < 2:
+        return df
+
+    day_tms = utils.date_ago_timestmp(xtb_tms=False, days=int(day))
+    df_result = df[df['timestamp'] >= day_tms]
+
+    # AREA STUFF
+    df_result = utils.integrate_area_below(df_result, yaxis=yaxis, dx=1)
+
+    return df_result
+
 
 @utils.logger.catch
 def check_time(symbol, df, time_diff=260):
@@ -98,8 +114,8 @@ def check_time(symbol, df, time_diff=260):
     utils.logger.info(symbol, 'Last tms:', utils.timestamp_to_date(last_tms), 'Diff:', diff, 'seconds')
 
     if diff > time_diff:
-        utils.logger.error(f'tms not sync. {diff} diff seconds')
-        utils.logger.error(f'date: {utils.timestamp_to_date(last_tms)}')
+        utils.logger.info(f'tms not sync. {diff} diff seconds')
+        utils.logger.info(f'date: {utils.timestamp_to_date(last_tms)}')
         return False
     
     return True
@@ -136,3 +152,4 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
         df_result.to_csv(static_path, index=False)
 
     return df_result
+

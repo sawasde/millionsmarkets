@@ -51,18 +51,22 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
 
 @utils.logger.catch
-def get_planet_trend(symbol):
+def get_planet_trend(symbol, bin_client=BIN_CLIENT):
     utils.logger.info(f'Get Planet info for {symbol}')
 
-
     # 1day data
-    trend_data = bintrade.get_chart_data(BIN_CLIENT, symbol, start='44 days ago', end='now', period=BIN_CLIENT.KLINE_INTERVAL_1DAY, df=True, decimal=True)
+    trend_data = bintrade.get_chart_data(   bin_client, 
+                                            symbol, 
+                                            start='22 days ago', 
+                                            end='now', 
+                                            period=bin_client.KLINE_INTERVAL_1DAY, 
+                                            df=True, 
+                                            decimal=True)
     ptrend, pclose, pd_limit, pz_limit = trends.planets_volume(trend_data)
     mtrend, mclose, md_limit, mz_limit = trends.planets_volume(trend_data, trend_type='mean')
     strend, sclose, sd_limit, mz_limit = trends.planets_volume(trend_data, trend_type='sum')
-    
-    # Execute
-    put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
+
+    return (symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
 
 
 
@@ -79,7 +83,10 @@ def loop():
 
     # loop crypto
     for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
-        get_planet_trend(symbol)
+
+        symbol_cosmos_info = get_planet_trend(symbol)
+        put_planet_trend_info(*symbol_cosmos_info)
+        
 
 
 @utils.logger.catch

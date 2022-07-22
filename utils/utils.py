@@ -17,7 +17,7 @@ def logger_path(path):
 	logger.add(path)
 
 # Discord Functions
-async def send_discord_message_attemps(channel, msg, attemps=4, logger=logger, delay=4):
+async def send_discord_message_attemps(channel, msg, attemps=4, delay=4):
     try:
         for i in range(0, attemps):
             logger.info(f'Sending message. {i} Attempt')
@@ -125,9 +125,10 @@ def timestamp_to_date(tms, tz='America/Bogota'):
 
 @logger.catch
 def date_now(tp=True, tz='America/Bogota'):
-    ''' Return the now time according to EV TIMEZONE TZ'''
+    ''' Return the now time according to EV TIMEZONE TZ '''
     now = dt.datetime.now(pytz.timezone(tz))
     if tp:
+        # y, m, d, h, minute, sec, wd, yd, i 
         return now.timetuple()
     else:
         return now
