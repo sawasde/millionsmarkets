@@ -1,10 +1,13 @@
 import os
 from re import S
+from statistics import mean
 import discord
 import asyncio
 from utils import utils, dynamodb
 from cosmobot import cosmoagent, cosmomixins
 from binance.client import Client
+from scipy.signal import argrelextrema
+import numpy as np
 
 #Staging
 DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
@@ -25,6 +28,7 @@ SYMBOLS_BASE_PATH = 'cosmobot/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 COSMO_SYMBOLS_PARAMETERS = {}
 COSMO_SYMBOLS_DFS = {}
+COSMO_SYMBOLS_SIGNAL = {}
 
 # Binance variables
 BIN_API_KEY = os.environ['BIN_API_KEY']
@@ -35,12 +39,16 @@ ALL_CRYPTO_PRICE = []
 
 @utils.logger.catch
 def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
-    global COSMO_SYMBOLS_COUNTER
+    global COSMO_SYMBOLS_SIGNAL
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
 
     trade = None
+
+    # if current signal already sent, wait x minutes to reset
+    if COSMO_SYMBOLS_SIGNAL[symbol]:
+        return None
 
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
@@ -61,25 +69,50 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
         if mtrend > 0:
             if mtrend > (limit_mtrend):
                 utils.logger.info(f'3rd check passed SELL mtrend: {mtrend}')
-                trade = 'SELL'
+                trade = 'SELL' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
+                COSMO_SYMBOLS_SIGNAL[symbol] = True
+
         # SELL
         else:
-            if mtrend < (- limit_mtrend):
+            if mtrend < (limit_mtrend):
                 utils.logger.info(f'3rd check passed BUY mtrend: {mtrend}')
-                trade = 'BUY'
+                trade = 'BUY' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
+                COSMO_SYMBOLS_SIGNAL[symbol] = True
 
     return trade
 
 
 @utils.logger.catch
-def update_cosmo_parameters(symbol):
+def update_cosmo_parameters(symbol, n=4444):
     global COSMO_SYMBOLS_PARAMETERS
     
     symbol_parameter_item = dynamodb.get_item(   AWS_DYNAMO_SESSION, 
                                                 TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
+
+    # Find local peaks
+    symbol_df['maxima_mtrend'] = symbol_df.iloc[argrelextrema(symbol_df['mtrend'].values, np.greater,
+                    order=n)[0]]['mtrend']
+    symbol_df['minima_mtrend'] = symbol_df.iloc[argrelextrema(symbol_df['mtrend'].values, np.less,
+                    order=n)[0]]['mtrend']
+
+    maxima_mean = symbol_df['maxima_mtrend'].dropna().mean()
+    minima_mean = symbol_df['minima_mtrend'].dropna().mean()
+
+    print('max:', maxima_mean, 'min:', minima_mean)
+
+    symbol_parameter_item['bull_mtrend']= int(maxima_mean)
+    symbol_parameter_item['bear_mtrend'] = int(minima_mean)
+
+    # Put it on memory
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
+
+    # Put it on dynamo
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        TABLE_NAME,
+                        {'feature' : f'{symbol}_parameters',
+                        'value' : symbol_parameter_item})
 
 
 @utils.logger.catch
@@ -96,6 +129,7 @@ def update_cosmo_dfs(symbol):
 @utils.logger.catch
 async def send_message_if_alert():
     global COSMOBOT_CONFIG
+    global COSMO_SYMBOLS_SIGNAL
     
     await DISCORD_CLIENT.wait_until_ready()
     channel = DISCORD_CLIENT.get_channel(id=int(COSMOBOT_CONFIG['discord_channel_id']))
@@ -108,20 +142,24 @@ async def send_message_if_alert():
             minute = utils.date_now()[4]
 
             # cosmo check every x minutes
-            if minute % COSMOBOT_CONFIG['cosmo_check_minutes'] == 0:
+            if minute % COSMOBOT_CONFIG['check_df_minutes'] == 0:
                 
                 # Get config again
                 COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION, 
                                                                         TABLE_NAME, 
                                                                         DEBUG )
+                # Update Stuff
                 update_cosmo_dfs(symbol)
                 update_cosmo_parameters(symbol)
+                COSMO_SYMBOLS_SIGNAL[symbol] = False
 
             # populate global memory dicts in 1st time run
             if (not COSMO_SYMBOLS_DFS) or (not COSMO_SYMBOLS_PARAMETERS):
 
+                # Update Stuff
                 update_cosmo_dfs(symbol)
                 update_cosmo_parameters(symbol)
+                COSMO_SYMBOLS_SIGNAL[symbol] = False
 
             # check for a trading call
             symbol_cosmo_info = cosmoagent.get_planet_trend(symbol, BIN_CLIENT)
