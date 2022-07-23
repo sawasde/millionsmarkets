@@ -145,6 +145,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
 
     else:
         utils.logger.info(f'{symbol}. CSV not found, using pure dynamo')
+        os.makedirs(static_path) 
         df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks)
     
     if save_csv:

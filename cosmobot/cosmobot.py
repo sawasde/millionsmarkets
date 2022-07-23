@@ -43,7 +43,7 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
-
+    # filter mtrend
     trade = None
 
     # if current signal already sent, wait x minutes to reset
@@ -53,31 +53,22 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
         utils.logger.info(f'1st check passed curr_area: {curr_area} limit_area: {limit_area}')
-        # 2nd check: bear or bull market
-        
-        # Bull market
-        if curr_area > 0:
-            limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
-            utils.logger.info(f'2nd check passed BULL market: {limit_mtrend}')
-        # Bear market
-        else:
-            limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
-            utils.logger.info(f'2nd check passed BEAR market: {limit_mtrend}')
-        
-        # 3rd check: mtrend limit reached BUY or SELL
+   
+        bull_limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
+        bear_limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
+
+        # 2nd check: mtrend limit reached BUY or SELL
         # BUY
-        if mtrend > 0:
-            if mtrend > (limit_mtrend):
-                utils.logger.info(f'3rd check passed SELL mtrend: {mtrend}')
-                trade = 'SELL' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
-                COSMO_SYMBOLS_SIGNAL[symbol] = True
+        if mtrend < (bear_limit_mtrend):
+            utils.logger.info(f'2nd check passed BUY mtrend: {mtrend}')
+            trade = 'BUY' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
+            COSMO_SYMBOLS_SIGNAL[symbol] = True
 
         # SELL
-        else:
-            if mtrend < (limit_mtrend):
-                utils.logger.info(f'3rd check passed BUY mtrend: {mtrend}')
-                trade = 'BUY' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
-                COSMO_SYMBOLS_SIGNAL[symbol] = True
+        if mtrend > (bull_limit_mtrend):
+            utils.logger.info(f'2nd check passed SELL mtrend: {mtrend}')
+            trade = 'SELL' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
+            COSMO_SYMBOLS_SIGNAL[symbol] = True
 
     return trade
 
@@ -97,10 +88,11 @@ def update_cosmo_parameters(symbol, n=4444):
     symbol_df['minima_mtrend'] = symbol_df.iloc[argrelextrema(symbol_df['mtrend'].values, np.less,
                     order=n)[0]]['mtrend']
 
-    maxima_mean = symbol_df['maxima_mtrend'].dropna().mean()
-    minima_mean = symbol_df['minima_mtrend'].dropna().mean()
+    maxima_series = symbol_df['maxima_mtrend'].dropna()
+    minima_series = symbol_df['minima_mtrend'].dropna()
 
-    print('max:', maxima_mean, 'min:', minima_mean)
+    maxima_mean = maxima_series.mean()
+    minima_mean = minima_series.mean()
 
     symbol_parameter_item['bull_mtrend']= int(maxima_mean)
     symbol_parameter_item['bear_mtrend'] = int(minima_mean)

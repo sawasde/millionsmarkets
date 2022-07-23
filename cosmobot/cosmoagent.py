@@ -57,7 +57,7 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
     # 1day data
     trend_data = bintrade.get_chart_data(   bin_client, 
                                             symbol, 
-                                            start='22 days ago', 
+                                            start='44 days ago', 
                                             end='now', 
                                             period=bin_client.KLINE_INTERVAL_1DAY, 
                                             df=True, 
