@@ -74,7 +74,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
 def aux_format_dynamo_df(df):
 
     to_float_cols = ['ptrend', 'mtrend', 'strend', 'pclose', 'pd_limit', 'pz_limit']
-    df_result = df.copy()
+    df_result = df#.copy()
     
     # Drop week columns
     if 'week' in df_result.columns:
@@ -135,7 +135,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
 
         if check_time(symbol, static_df, time_diff):
             utils.logger.info(f'{symbol}. timestamps well coupled, using only CSV')
-            df_result = static_df.copy()
+            df_result = static_df#.copy()
         
         else:
             utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
