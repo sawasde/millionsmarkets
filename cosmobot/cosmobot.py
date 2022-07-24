@@ -76,23 +76,20 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
 @utils.logger.catch
 def update_cosmo_parameters(symbol, n=4444):
     global COSMO_SYMBOLS_PARAMETERS
+    utils.logger.info('Update cosmo parameters')
     
     symbol_parameter_item = dynamodb.get_item(   AWS_DYNAMO_SESSION, 
                                                 TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
 
+    mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
-    symbol_df['maxima_mtrend'] = symbol_df.iloc[argrelextrema(symbol_df['mtrend'].values, np.greater,
-                    order=n)[0]]['mtrend']
-    symbol_df['minima_mtrend'] = symbol_df.iloc[argrelextrema(symbol_df['mtrend'].values, np.less,
-                    order=n)[0]]['mtrend']
+    mtrend_maxima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.greater, order=n)[0]]
+    mtrend_minima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.less, order=n)[0]]
 
-    maxima_series = symbol_df['maxima_mtrend'].dropna()
-    minima_series = symbol_df['minima_mtrend'].dropna()
-
-    maxima_mean = maxima_series.mean()
-    minima_mean = minima_series.mean()
+    maxima_mean = mtrend_maxima.mean()
+    minima_mean = mtrend_minima.mean()
 
     symbol_parameter_item['bull_mtrend']= int(maxima_mean)
     symbol_parameter_item['bear_mtrend'] = int(minima_mean)
@@ -110,6 +107,7 @@ def update_cosmo_parameters(symbol, n=4444):
 @utils.logger.catch
 def update_cosmo_dfs(symbol):
     global COSMO_SYMBOLS_DFS
+    utils.logger.info('Update cosmo DFs')
     
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
     symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, 5, 521)

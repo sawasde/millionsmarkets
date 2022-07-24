@@ -90,6 +90,7 @@ def aux_format_dynamo_df(df):
 
 @utils.logger.catch
 def aux_format_plotter_df(df, day=31, yaxis='ptrend'):
+    utils.logger.info('Format DF including area')
     
     df['zero_bound'] = 0
 
