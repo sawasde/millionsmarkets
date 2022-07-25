@@ -112,7 +112,7 @@ def check_time(symbol, df, time_diff=260):
     last_tms = int(df['timestamp'].iloc[-1])
 
     diff = tms - last_tms
-    utils.logger.info(symbol, 'Last tms:', utils.timestamp_to_date(last_tms), 'Diff:', diff, 'seconds')
+    utils.logger.info(f'{symbol} Last tms: {utils.timestamp_to_date(last_tms)} Diff: {diff} seconds')
 
     if diff > time_diff:
         utils.logger.info(f'tms not sync. {diff} diff seconds')
