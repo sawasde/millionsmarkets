@@ -49,7 +49,7 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
     # if current signal already sent, wait x minutes to reset
     if COSMO_SYMBOLS_SIGNAL[symbol]:
         return None
-
+    print(curr_area, limit_area)
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
         utils.logger.info(f'1st check passed curr_area: {curr_area} limit_area: {limit_area}')
