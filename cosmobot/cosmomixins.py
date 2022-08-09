@@ -2,7 +2,7 @@ from time import time
 import pandas as pd
 import os
 from utils import utils, dynamodb
-
+from pathlib import Path
 
 @utils.logger.catch
 def get_cosmobot_time(timestamp=None):
@@ -146,7 +146,8 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
 
     else:
         utils.logger.info(f'{symbol}. CSV not found, using pure dynamo')
-        os.makedirs(static_path) 
+        output_file = Path(static_path)
+        output_file.parent.mkdir(exist_ok=True, parents=True)
         df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks)
     
     if save_csv:
