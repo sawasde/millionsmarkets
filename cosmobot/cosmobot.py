@@ -94,6 +94,8 @@ def update_cosmo_parameters(symbol, n=4444):
     symbol_parameter_item['bull_mtrend']= int(maxima_mean)
     symbol_parameter_item['bear_mtrend'] = int(minima_mean)
 
+    # Log parameters
+    utils.logger.info(f'max: {maxima_mean} min {minima_mean}')
     # Put it on memory
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
