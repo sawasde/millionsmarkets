@@ -74,7 +74,7 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
 
 
 @utils.logger.catch
-def update_cosmo_parameters(symbol, n=4444):
+def update_cosmo_parameters(symbol):
     global COSMO_SYMBOLS_PARAMETERS
     utils.logger.info('Update cosmo parameters')
     
@@ -83,10 +83,13 @@ def update_cosmo_parameters(symbol, n=4444):
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
 
+    # order n
+    order_n = int(symbol_parameter_item['order_mtrend'])
+
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
-    mtrend_maxima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.greater, order=n)[0]]
-    mtrend_minima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.less, order=n)[0]]
+    mtrend_maxima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.greater, order=order_n)[0]]
+    mtrend_minima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.less, order=order_n)[0]]
 
     maxima_mean = mtrend_maxima.mean()
     minima_mean = mtrend_minima.mean()
@@ -95,7 +98,7 @@ def update_cosmo_parameters(symbol, n=4444):
     symbol_parameter_item['bear_mtrend'] = int(minima_mean)
 
     # Log parameters
-    utils.logger.info(f'max: {maxima_mean} min {minima_mean}')
+    utils.logger.info(f'parameters max: {maxima_mean} min {minima_mean}')
     # Put it on memory
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
