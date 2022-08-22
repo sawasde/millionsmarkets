@@ -28,6 +28,7 @@ COSMOAGENT_CONFIG = {}
 
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
+    utils.logger.info(f'Put Planet info for {symbol}')
 
     cosmo_time = cosmomixins.get_cosmobot_time()
     cosmo_week = cosmo_time[0]
