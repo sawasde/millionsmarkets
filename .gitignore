@@ -10,5 +10,6 @@
 *.pyc
 
 #assets/
-*.png
+*3.png
+*1.png
 *.csv
