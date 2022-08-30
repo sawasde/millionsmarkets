@@ -158,6 +158,9 @@ async def send_message_if_alert():
 
             # check for a trading call
             symbol_cosmo_info = cosmoagent.get_planet_trend(symbol, BIN_CLIENT)
+            
+            if not symbol_cosmo_info[1]:
+                continue
 
             if DEBUG:
                 print(symbol_cosmo_info)

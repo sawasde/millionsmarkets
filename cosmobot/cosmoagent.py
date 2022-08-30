@@ -50,23 +50,29 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
         dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}', item)
 
 
-@utils.logger.catch
+
 def get_planet_trend(symbol, bin_client=BIN_CLIENT):
     utils.logger.info(f'Get Planet info for {symbol}')
 
-    # 1day data
-    trend_data = bintrade.get_chart_data(   bin_client, 
-                                            symbol, 
-                                            start='44 days ago', 
-                                            end='now', 
-                                            period=bin_client.KLINE_INTERVAL_1DAY, 
-                                            df=True, 
-                                            decimal=True)
-    ptrend, pclose, pd_limit, pz_limit = trends.planets_volume(trend_data)
-    mtrend, mclose, md_limit, mz_limit = trends.planets_volume(trend_data, trend_type='mean')
-    strend, sclose, sd_limit, mz_limit = trends.planets_volume(trend_data, trend_type='sum')
+    try:
 
-    return (symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
+        # 1day data
+        trend_data = bintrade.get_chart_data(   bin_client, 
+                                                symbol, 
+                                                start='44 days ago', 
+                                                end='now', 
+                                                period=bin_client.KLINE_INTERVAL_1DAY, 
+                                                df=True, 
+                                                decimal=True)
+        ptrend, pclose, pd_limit, pz_limit = trends.planets_volume(trend_data)
+        mtrend, mclose, md_limit, mz_limit = trends.planets_volume(trend_data, trend_type='mean')
+        strend, sclose, sd_limit, mz_limit = trends.planets_volume(trend_data, trend_type='sum')
+
+        return (symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
+    
+    except Exception as e:
+        utils.logger.error(e)
+        return (symbol, None, None, None, None, None, None)
 
 
 
@@ -85,7 +91,11 @@ def loop():
     for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
 
         symbol_cosmos_info = get_planet_trend(symbol)
-        put_planet_trend_info(*symbol_cosmos_info)
+
+        if symbol_cosmos_info[1]:
+            put_planet_trend_info(*symbol_cosmos_info)
+        else:
+            continue
         
 
 
