@@ -90,7 +90,7 @@ def loop():
     # loop crypto
     for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
 
-        symbol_cosmos_info = get_planet_trend(symbol)
+        symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
 
         if symbol_cosmos_info[1]:
             put_planet_trend_info(*symbol_cosmos_info)
