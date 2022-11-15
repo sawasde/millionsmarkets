@@ -50,3 +50,4 @@ websockets==10.3
 win32-setctime==1.1.0
 yarl==1.7.2
 zope.interface==5.4.0
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
