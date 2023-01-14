@@ -10,7 +10,7 @@ charset-normalizer==2.0.12
 colorama==0.4.4
 constantly==15.1.0
 cycler==0.11.0
-dateparser==1.1.1
+dateparser==1.1.6
 discord.py==1.7.3
 fonttools==4.34.4
 hyperlink==21.0.0
