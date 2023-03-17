@@ -1,5 +1,4 @@
 from twisted.internet import task, reactor
-import pandas as pd
 from binance.client import Client
 from decimal import Decimal
 import os

@@ -5,7 +5,7 @@ import json
 import datetime as dt
 import pytz
 import string
-from scipy.integrate import simps
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import gc
@@ -142,9 +142,9 @@ def date_y_m_d():
 
 
 @logger.catch
-def integrate_area_below(df='', yaxis='', dx=1):
+def integrate_area_below(df='', yaxis='', dx=1.0):
     ''' Return df with the area iterated'''
-    
+
     df_result = df.reset_index().copy()
     df_result['area'] = 0
 
@@ -155,7 +155,7 @@ def integrate_area_below(df='', yaxis='', dx=1):
         if len(chunk) == 0:
             continue
         
-        area = simps(chunk,dx=dx)
+        area = np.trapz(chunk,dx=dx)
         df_result.at[i, 'area'] = area
 
     return df_result.copy()
