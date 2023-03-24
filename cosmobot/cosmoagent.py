@@ -27,10 +27,11 @@ COSMOAGENT_CONFIG = {}
 
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
-
+    
     cosmo_time = cosmomixins.get_cosmobot_time()
     cosmo_week = cosmo_time[0]
     cosmo_timestamp = cosmo_time[4]
+
 
     to_put = {  'week' : cosmo_week, 
                 'timestamp' : cosmo_timestamp,
@@ -63,6 +64,7 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
                                                 period=bin_client.KLINE_INTERVAL_1DAY, 
                                                 df=True, 
                                                 decimal=True)
+
         ptrend, pclose, pd_limit, pz_limit = trends.planets_volume(trend_data)
         mtrend, mclose, md_limit, mz_limit = trends.planets_volume(trend_data, trend_type='mean')
         strend, sclose, sd_limit, mz_limit = trends.planets_volume(trend_data, trend_type='sum')
@@ -97,9 +99,8 @@ def loop():
             continue
         
 
-
 @utils.logger.catch
-def launch():
+def loop_launch(run_once=False):
     global COSMOAGENT_CONFIG
     global BIN_CLIENT
     
@@ -121,7 +122,15 @@ def launch():
         klines = bintrade.get_chart_data(BIN_CLIENT, 'SOLBUSD', start='1 day ago', end='now', period=BIN_CLIENT.KLINE_INTERVAL_1DAY, df=True, decimal=True)
         print(klines)
 
-    loop_timeout = int(COSMOAGENT_CONFIG['loop_timeout'])
-    loop_call = task.LoopingCall(loop)
-    loop_call.start(loop_timeout)
-    reactor.run()
+    if run_once:
+        loop()
+    else:
+        loop_timeout = int(COSMOAGENT_CONFIG['loop_timeout'])
+        loop_call = task.LoopingCall(loop)
+        loop_call.start(loop_timeout)
+        reactor.run()
+
+
+@utils.logger.catch
+def simple_launch():
+    loop_launch(run_once=True)
