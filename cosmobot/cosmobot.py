@@ -144,6 +144,14 @@ def update_cosmo_dfs(symbol):
 
     COSMO_SYMBOLS_DFS[symbol] = symbol_df
 
+def prepare_msg(call, symbol, mtrend, area, pzlimit, pclose):
+    # Prepare message
+    msg = f'{call} **{symbol}**\n'
+    msg += f'Mean trend: {mtrend}\n'
+    msg += f'Longterm trend: {area}\n'
+    msg += f'Limit price: ${pzlimit}\n'
+    msg += f'Current price: ${pclose}\n'
+    return msg
 
 @utils.logger.catch
 async def send_message_if_alert():
@@ -201,11 +209,7 @@ async def send_message_if_alert():
                 area = '{:.2e}'.format(area)
 
                 # Prepare message
-                msg = f'{cosmo_call} **{symbol}**\n'
-                msg += f'Mean trend: {mtrend}\n'
-                msg += f'Longterm trend: {area}\n'
-                msg += f'Limit price: ${pzlimit}\n'
-                msg += f'Current price: ${pclose}\n'
+                msg = prepare_msg(cosmo_call, symbol, mtrend, area, pzlimit, pclose)
 
                 # mention roles
                 discord_role =  guild.get_role(int(COSMOBOT_CONFIG['discord_role_id']))
@@ -231,7 +235,7 @@ async def on_loop():
 
 
 @utils.logger.catch
-def launch():
+def loop_launch():
     global COSMOBOT_CONFIG
     global BIN_CLIENT
     
