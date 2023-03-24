@@ -6,7 +6,6 @@ import asyncio
 from utils import utils, dynamodb
 from cosmobot import cosmoagent, cosmomixins
 from binance.client import Client
-from scipy.signal import argrelextrema
 import numpy as np
 
 #Staging
@@ -72,6 +71,28 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
 
     return trade
 
+@utils.logger.catch
+def find_peaks(initial_array, order=8888, type='max'):
+    peaks = []
+    arrays = np.array_split(np.flip(initial_array), order)
+
+    if type == 'max':
+        for arr in arrays:
+            maxi = arr.max()
+            if maxi < 0:
+                continue
+            else: 
+                peaks.append(maxi)
+        return np.array(peaks)
+    else:
+        for arr in arrays:
+            mini = arr.min()
+            if mini > 0:
+                continue
+            else:
+                peaks.append(mini)
+        return np.array(peaks)
+
 
 @utils.logger.catch
 def update_cosmo_parameters(symbol):
@@ -88,8 +109,11 @@ def update_cosmo_parameters(symbol):
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
-    mtrend_maxima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.greater, order=order_n)[0]]
-    mtrend_minima = symbol_df['mtrend'].iloc[argrelextrema(mtrend_array, np.less, order=order_n)[0]]
+    mtrend_maxima = find_peaks(mtrend_array, order=order_n, type='max')
+    mtrend_minima = find_peaks(mtrend_array, order=order_n, type='min')
+
+    print('MAXI', mtrend_maxima)
+    print('MINI', mtrend_minima)
 
     maxima_mean = mtrend_maxima.mean()
     minima_mean = mtrend_minima.mean()
@@ -127,8 +151,8 @@ async def send_message_if_alert():
     global COSMO_SYMBOLS_SIGNAL
     
     await DISCORD_CLIENT.wait_until_ready()
-    channel = DISCORD_CLIENT.get_channel(id=int(COSMOBOT_CONFIG['discord_channel_id']))
-    guild =  DISCORD_CLIENT.get_guild(id=int(COSMOBOT_CONFIG['discord_server_id']))
+    channel = DISCORD_CLIENT.get_channel(int(COSMOBOT_CONFIG['discord_channel_id']))
+    guild =  DISCORD_CLIENT.get_guild(int(COSMOBOT_CONFIG['discord_server_id']))
         
     while not DISCORD_CLIENT.is_closed():
 
@@ -200,6 +224,11 @@ async def send_message_if_alert():
 async def on_ready():
     utils.logger.info(f'Logged in as {DISCORD_CLIENT.user.name}')
 
+async def on_loop():
+    async with DISCORD_CLIENT:
+        DISCORD_CLIENT.loop.create_task(send_message_if_alert())
+        await DISCORD_CLIENT.start(DISCORD_BOT_TOKEN)
+
 
 @utils.logger.catch
 def launch():
@@ -207,7 +236,7 @@ def launch():
     global BIN_CLIENT
     
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG)
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG) 
 
     # Log path
     utils.logger_path(COSMOBOT_CONFIG['log_path'])
@@ -220,5 +249,4 @@ def launch():
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
     
     # Discord initialize
-    DISCORD_CLIENT.loop.create_task(send_message_if_alert())
-    DISCORD_CLIENT.run(DISCORD_BOT_TOKEN)
+    asyncio.run(on_loop())
