@@ -45,9 +45,9 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
     item = json.loads(json.dumps(to_put), parse_float=Decimal)
 
     if DEBUG:
-        dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}_test', item)
+        dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}_test', item, region='sa-east-1')
     else:
-        dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}', item)
+        dynamodb.put_item(AWS_DYNAMO_SESSION, f'mm_cosmobot_historical_{symbol}', item, region='sa-east-1')
 
 
 
