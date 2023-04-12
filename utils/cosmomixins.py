@@ -52,13 +52,15 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
                                             type='both',
                                             skey='timestamp',
                                             svalue=timestamp,
-                                            scond='gte')
+                                            scond='gte',
+                                            region='us-east-1')
 
         else: 
             info = dynamodb.query_items(    dyn_session=dyn_session, 
                                             table_name=f'mm_cosmobot_historical_{symbol}',
                                             pkey='week',
-                                            pvalue=week)
+                                            pvalue=week,
+                                            region='us-east-1')
 
         dfs.append(pd.DataFrame(info))
 
