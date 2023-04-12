@@ -1,4 +1,3 @@
-from twisted.internet import task, reactor
 from binance.client import Client
 from decimal import Decimal
 import os
@@ -6,8 +5,7 @@ import json
 
 # local imports
 from utils import utils, trends, bintrade, dynamodb
-from cosmobot import cosmomixins
-
+from utils import cosmomixins
 
 #Staging
 DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
@@ -78,7 +76,7 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
 
 
 @utils.logger.catch
-def loop():
+def run():
     global ALL_CRYPTO_PRICE
     global COSMOAGENT_CONFIG
 
@@ -100,7 +98,7 @@ def loop():
         
 
 @utils.logger.catch
-def loop_launch(run_once=False):
+def launch():
     global COSMOAGENT_CONFIG
     global BIN_CLIENT
     
@@ -114,7 +112,7 @@ def loop_launch(run_once=False):
     # Log config
     utils.logger.info(COSMOAGENT_CONFIG)
 
-    #Binance
+    # Binance
     utils.logger.info('AUTH BINANCE')
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
 
@@ -122,15 +120,5 @@ def loop_launch(run_once=False):
         klines = bintrade.get_chart_data(BIN_CLIENT, 'SOLBUSD', start='1 day ago', end='now', period=BIN_CLIENT.KLINE_INTERVAL_1DAY, df=True, decimal=True)
         print(klines)
 
-    if run_once:
-        loop()
-    else:
-        loop_timeout = int(COSMOAGENT_CONFIG['loop_timeout'])
-        loop_call = task.LoopingCall(loop)
-        loop_call.start(loop_timeout)
-        reactor.run()
-
-
-@utils.logger.catch
-def simple_launch():
-    loop_launch(run_once=True)
+    # Start bot
+    run()

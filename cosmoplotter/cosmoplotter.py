@@ -1,15 +1,14 @@
 import os
 import pandas as pd
 # local imports
-from utils import utils, dynamodb
-from cosmobot import cosmomixins
+from utils import utils, dynamodb, cosmomixins, plotting
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session()
 
 # General vars
 COSMOBOT_CONFIG = {}
-CHART_BASE_PATH = 'cosmobot/assets/'
+CHART_BASE_PATH = 'cosmoplotter/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 TMS_TRESSHOLD_SEC = 260
 
@@ -22,7 +21,7 @@ def plotter(symbol, df, day):
 
     png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
 
-    utils.plot_sublots( df=df_result, 
+    plotting.plot_sublots( df=df_result, 
                         plot_features_dicts=[{'pclose':'g', 'pz_limit':'b', 'pd_limit': 'r'},
                                             {'area':'r', 'zero_bound':'b'},
                                             {'mtrend':'g', 'zero_bound':'b'},
