@@ -47,7 +47,6 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
 
         last_n_weeks.append(f'{year_delta}_{week_delta}')
 
-    print(last_n_weeks, timestamp)
     for week in last_n_weeks:
 
         if timestamp:
