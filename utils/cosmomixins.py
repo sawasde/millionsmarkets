@@ -24,9 +24,14 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
 
     if timestamp:
         cosmo_time_tms, week_tms, year_tms, date_tms, tms_tms = get_cosmobot_time(timestamp)
-        date_days_delta = abs(date_now - date_tms).days
-        weeks = 1 + (date_days_delta // 7)
 
+        week_delta = week_now - week_tms
+        
+        if week_delta < 0:
+            week_delta = 52 - abs(week_delta)
+        
+        weeks = 1 +week_delta
+        
     # create array of weeks
     last_n_weeks = []
 
@@ -42,6 +47,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
 
         last_n_weeks.append(f'{year_delta}_{week_delta}')
 
+    print(last_n_weeks, timestamp)
     for week in last_n_weeks:
 
         if timestamp:
@@ -141,7 +147,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
         
         else:
             utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
-            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, last_tms)
+            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, (last_tms))
 
             df_result = pd.concat([static_df, dynamo_df], ignore_index=True)
             df_result = df_result.sort_values('timestamp')
