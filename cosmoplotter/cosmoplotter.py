@@ -22,7 +22,7 @@ def plotter(symbol, df, day):
     png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
 
     plotting.plot_sublots( df=df_result, 
-                        plot_features_dicts=[{'pclose':'g', 'pz_limit':'b', 'pd_limit': 'r'},
+                        plot_features_dicts=[{'pclose':'g', 'pz_limit':'b'},
                                             {'area':'r', 'zero_bound':'b'},
                                             {'mtrend':'g', 'zero_bound':'b'},
                                             ],
