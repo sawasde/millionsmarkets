@@ -21,7 +21,7 @@ def create_session():
                         )
 
 @utils.logger.catch
-def get_item(dyn_session, table_name, key, region='us-east-1'):
+def get_item(dyn_session, table_name, key, region='sa-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
@@ -35,7 +35,7 @@ def get_item(dyn_session, table_name, key, region='us-east-1'):
 
 
 @utils.logger.catch
-def put_item(dyn_session, table_name, item, region='us-east-1'):
+def put_item(dyn_session, table_name, item, region='sa-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
@@ -45,7 +45,7 @@ def put_item(dyn_session, table_name, item, region='us-east-1'):
     return response
 
 @utils.logger.catch
-def batch_put_items(dyn_session, table_name, item_list, region='us-east-1'):
+def batch_put_items(dyn_session, table_name, item_list, region='sa-east-1'):
     
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
@@ -57,7 +57,7 @@ def batch_put_items(dyn_session, table_name, item_list, region='us-east-1'):
         )
 
 @utils.logger.catch
-def query_items(dyn_session, table_name, pkey, pvalue, type='partition', skey=None, svalue=None, scond='eq', region='us-east-1'):
+def query_items(dyn_session, table_name, pkey, pvalue, type='partition', skey=None, svalue=None, scond='eq', region='sa-east-1'):
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
