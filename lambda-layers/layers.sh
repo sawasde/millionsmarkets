@@ -1,5 +1,5 @@
 payload_path="payloads"
-package_list=("python-binance" "discord.py" "loguru")
+package_list=("discord.py") #"python-binance"  "loguru")
 python_version="3.10"
 
 # Check if a directory does not exist and create it
@@ -21,7 +21,7 @@ else
 fi
 
 # Ensure zip is intalled
-if which zip | grep "zip"; then
+if which zip 2>&1 | grep -q "zip"; then
   echo "[+] zip OK"
 else
   echo "[-] zip FAIL. Please install zip"
@@ -49,7 +49,7 @@ for pack in ${package_list[@]}; do
   cd ..
 
   echo "[+] Move Zip to root folder"
-  mv -r "$pack/$pack.zip" "$pack.zip"
+  mv "$pack/$pack.zip" "$pack.zip"
 
   echo "[+] Deactivating Virtual Env"
   deactivate
