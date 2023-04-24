@@ -99,7 +99,7 @@ def run():
         
 
 @utils.logger.catch
-def launch():
+def launch(event=None, context=None):
     global COSMOAGENT_CONFIG
     global BIN_CLIENT
     

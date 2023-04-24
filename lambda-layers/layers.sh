@@ -1,9 +1,12 @@
 #!/bin/bash
 
 payload_path="payloads"
-package_list=("discord":"discord.py"
-              "binance":"python-binance"
-              "loguru":"loguru")
+
+declare -A package_dict
+package_dict["binance"]="python-binance"
+package_dict["discord"]="discord.py"
+package_dict["loguru"]="loguru"
+
 py_version="3.9"
 
 # Check if a directory does not exist and create it
@@ -33,7 +36,7 @@ else
 fi
 
 function run_package() {
-  echo "[+] Working with $1 Package"
+  echo "[+] Working with $1 Package. PIP package: $2"
   echo "[+] Creating $1 Virtual Env"
   "python$py_version" -m venv "$1"
 
@@ -44,7 +47,7 @@ function run_package() {
   pip install "$2"
 
   echo "[+] Rename and Move Package"
-  mv "$1/lib/python3.10/site-packages" "$1/python"
+  mv "$1/lib/python$py_version/site-packages" "$1/python"
 
   echo "[+] Zipping Folder"
   cd $1
@@ -56,10 +59,11 @@ function run_package() {
 
   echo "[+] Deactivating Virtual Env"
   deactivate
+
+  echo "[+] Finish $1"
+  echo "[+] ---------------- [+]"
 }
 
-for pack in ${package_list[@]}; do
-  pack="${pack%%:*}"
-  pack_pip="${pack##*:}"
-  (run_package $pack $pack_pip)
+for pack in "${!package_dict[@]}"; do
+  (run_package "$pack" "${package_dict[$pack]}")
 done
