@@ -14,11 +14,14 @@ def load_feature_value_config(dyn_session, table, debug=True):
 
 
 @utils.logger.catch
-def create_session():
-    return boto3.Session(
+def create_session(from_lambda=False):
+    if from_lambda:
+        return boto3.Session()
+    else:
+        return boto3.Session(
                             aws_access_key_id=os.getenv('AWS_ACCESS_ID'),
                             aws_secret_access_key=os.getenv('AWS_SECRET_KEY')
-                        )
+                            )
 
 @utils.logger.catch
 def get_item(dyn_session, table_name, key, region='sa-east-1'):
