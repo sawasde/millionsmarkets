@@ -9,6 +9,7 @@ from utils import cosmomixins
 
 #Staging
 DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
+FROM_LAMBDA = bool(int(os.getenv('COSMOBOT_FROM_LAMBDA')))
 
 # Binance variables
 BIN_API_KEY = os.environ['BIN_API_KEY']
@@ -17,7 +18,7 @@ BIN_CLIENT = None
 ALL_CRYPTO_PRICE = []
 
 # AWS Dynamo
-AWS_DYNAMO_SESSION = dynamodb.create_session()
+AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 
 # General vars
 COSMOAGENT_CONFIG = {}
