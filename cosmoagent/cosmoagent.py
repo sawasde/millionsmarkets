@@ -108,7 +108,8 @@ def launch(event=None, context=None):
     COSMOAGENT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmoagent' , DEBUG)
 
     # Log path
-    utils.logger_path(COSMOAGENT_CONFIG['log_path'])
+    if not FROM_LAMBDA:
+        utils.logger_path(COSMOAGENT_CONFIG['log_path'],from_lambda=FROM_LAMBDA)
 
     # Log config
     utils.logger.info(COSMOAGENT_CONFIG)
