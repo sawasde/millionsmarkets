@@ -4,7 +4,7 @@ payload_path="payloads"
 package_list=("discord":"discord.py"
               "binance":"python-binance"
               "loguru":"loguru")
-python_version="3.10"
+py_version="3.9"
 
 # Check if a directory does not exist and create it
 if [ ! -d "$payload_path" ] 
@@ -17,8 +17,8 @@ fi
 
 cd "$payload_path"
 # Ensure correct Python version
-if python3 --version 2>&1 | grep -q "Python $python_version"; then
-  echo "[+] Python Version OK"
+if "python$py_version" --version 2>&1 | grep -q "Python $py_version"; then
+  echo "[+] Python Version OK python$py_version"
 else
   echo "[-] Python Version FAIL. Please use the correct version"
   exit -1
@@ -35,7 +35,7 @@ fi
 function run_package() {
   echo "[+] Working with $1 Package"
   echo "[+] Creating $1 Virtual Env"
-  python3 -m venv "$1"
+  "python$py_version" -m venv "$1"
 
   echo "[+] Activating Virtual Env"
   source "$1/bin/activate"
