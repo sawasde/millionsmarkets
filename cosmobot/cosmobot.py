@@ -3,8 +3,8 @@ from re import S
 from statistics import mean
 import discord
 import asyncio
-from utils import utils, dynamodb
-from cosmobot import cosmoagent, cosmomixins
+from cosmoagent import cosmoagent
+from utils import utils, dynamodb, cosmomixins
 from binance.client import Client
 import numpy as np
 
