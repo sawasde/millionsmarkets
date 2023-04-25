@@ -27,8 +27,7 @@ def plotter(symbol, df, day):
                                             {'mtrend':'g', 'zero_bound':'b'},
                                             ],
                         xaxis='timestamp', save_picture=png_file_path_temp, style='-', show=False)
-    (symbol, day, 'PLOT SAVED')
-
+    utils.logger.info(symbol, day, 'PLOT SAVED')
 
 
 @utils.logger.catch
