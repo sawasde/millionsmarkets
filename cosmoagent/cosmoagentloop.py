@@ -1,4 +1,5 @@
 """ Run cosmoagent in a twisted loop """
+# pylint: disable=no-name-in-module
 
 from twisted.internet import task, reactor
 from cosmoagent import cosmoagent as cat
