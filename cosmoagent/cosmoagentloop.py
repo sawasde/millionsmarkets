@@ -10,6 +10,7 @@ from utils import utils
 def launch():
     """ Load cosmoagent first, then the loop config and run it """
     # pylint: disable=no-member
+
     cat.launch()
 
     loop_timeout = int(cat.COSMOAGENT_CONFIG['loop_timeout'])
