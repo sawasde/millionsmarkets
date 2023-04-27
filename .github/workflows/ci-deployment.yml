@@ -1,4 +1,4 @@
-name: Pylint
+name: CI deployment
 
 on: [push, pull_request]
 
