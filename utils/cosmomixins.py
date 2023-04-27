@@ -30,7 +30,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
         if week_delta < 0:
             week_delta = 52 - abs(week_delta)
         
-        weeks = 1 +week_delta
+        weeks = 1 + week_delta
         
     # create array of weeks
     last_n_weeks = []
