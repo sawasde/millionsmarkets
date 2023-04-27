@@ -130,17 +130,17 @@ def round_float_num(num, dig):
 
 
 @logger.catch
-def timestamp_to_date(tms, timezone='America/Bogota'):
+def timestamp_to_date(tms, tmz='America/Bogota'):
     """ Take time in hours, days, weeks, months ago and return the timestamp in ms """
 
-    return (dt.datetime.fromtimestamp(tms, timezone=pytz.timezone(timezone)))
+    return (dt.datetime.fromtimestamp(tms, tz=pytz.timezone(tmz)))
 
 
 @logger.catch
-def date_now(use_tuple=True, timezone='America/Bogota'):
+def date_now(use_tuple=True, tmz='America/Bogota'):
     """ Return the now time according to EV TIMEZONE TZ """
 
-    now = dt.datetime.now(pytz.timezone(timezone))
+    now = dt.datetime.now(pytz.timezone(tmz))
     if use_tuple:
         # y, m, d, h, minute, sec, wd, yd, i
         return now.timetuple()

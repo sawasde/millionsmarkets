@@ -21,12 +21,12 @@ def plotter(symbol, df, day):
 
     png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
 
-    plotting.plot_sublots( df=df_result, 
-                        plot_features_dicts=[{'pclose':'g', 'pz_limit':'b'},
-                                            {'area':'r', 'zero_bound':'b'},
-                                            {'mtrend':'g', 'zero_bound':'b'},
-                                            ],
-                        xaxis='timestamp', save_picture=png_file_path_temp, style='-', show=False)
+    plotting.plot_sublots(  df_initial=df_result,
+                            plot_features_dicts=[{'pclose':'g', 'pz_limit':'b'},
+                                                {'area':'r', 'zero_bound':'b'},
+                                                {'mtrend':'g', 'zero_bound':'b'},
+                                                ],
+                        xaxis='timestamp', save=png_file_path_temp, style='-', show=False)
     utils.logger.info(symbol, day, 'PLOT SAVED')
 
 
@@ -36,7 +36,7 @@ def remove_all_plots():
     for root, dirs, files in os.walk(CHART_BASE_PATH):
         for basename in files:
             filename = os.path.join(root, basename)
-            
+
             if filename.endswith(f'.png'):
                 os.remove(filename)
 
@@ -69,7 +69,7 @@ def main(unit_test=False, days_ago=[31,13]):
 @utils.logger.catch
 def launch():
     global COSMOBOT_CONFIG
-    
+
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot')
 
@@ -77,4 +77,3 @@ def launch():
     utils.logger.info(COSMOBOT_CONFIG)
 
     main()
-    

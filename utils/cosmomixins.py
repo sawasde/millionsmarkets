@@ -26,12 +26,12 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
         cosmo_time_tms, week_tms, year_tms, date_tms, tms_tms = get_cosmobot_time(timestamp)
 
         week_delta = week_now - week_tms
-        
+
         if week_delta < 0:
             week_delta = 52 - abs(week_delta)
-        
+
         weeks = 1 + week_delta
-        
+
     # create array of weeks
     last_n_weeks = []
 
@@ -50,7 +50,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
     for week in last_n_weeks:
 
         if timestamp:
-            info = dynamodb.query_items(    dyn_session=dyn_session, 
+            info = dynamodb.query_items(    dyn_session=dyn_session,
                                             table_name=f'mm_cosmobot_historical_{symbol}',
                                             pkey='week',
                                             pvalue=week,
@@ -60,8 +60,8 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
                                             scond='gte',
                                             region='sa-east-1')
 
-        else: 
-            info = dynamodb.query_items(    dyn_session=dyn_session, 
+        else:
+            info = dynamodb.query_items(    dyn_session=dyn_session,
                                             table_name=f'mm_cosmobot_historical_{symbol}',
                                             pkey='week',
                                             pvalue=week,
@@ -70,7 +70,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
         dfs.append(pd.DataFrame(info))
 
     df_result = pd.concat(dfs, ignore_index=True)
-    
+
     # get df format
     df_result = aux_format_dynamo_df(df_result)
 
@@ -82,7 +82,7 @@ def aux_format_dynamo_df(df):
 
     to_float_cols = ['ptrend', 'mtrend', 'strend', 'pclose', 'pd_limit', 'pz_limit']
     df_result = df#.copy()
-    
+
     # Drop week columns
     if 'week' in df_result.columns:
         df_result.drop(['week'], inplace=True, axis=1)
@@ -98,7 +98,7 @@ def aux_format_dynamo_df(df):
 @utils.logger.catch
 def aux_format_plotter_df(df, day=31, yaxis='ptrend'):
     utils.logger.info('Format DF including area')
-    
+
     df['zero_bound'] = 0
 
     if len(df) < 2:
@@ -108,7 +108,7 @@ def aux_format_plotter_df(df, day=31, yaxis='ptrend'):
     df_result = df[df['timestamp'] >= day_tms]
 
     # AREA STUFF
-    df_result = utils.integrate_area_below(df_result, yaxis=yaxis, dx=1)
+    df_result = utils.integrate_area_below(df_result, yaxis=yaxis, dx_portion=1)
 
     return df_result
 
@@ -125,13 +125,13 @@ def check_time(symbol, df, time_diff=260):
         utils.logger.info(f'tms not sync. {diff} diff seconds')
         utils.logger.info(f'date: {utils.timestamp_to_date(last_tms)}')
         return False
-    
+
     return True
 
 
 @utils.logger.catch
 def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save_csv=True):
-    
+
     if os.path.exists(static_path):
         utils.logger.info(f'Found CSV {static_path}')
         static_df = pd.read_csv(static_path)
@@ -143,7 +143,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
         if check_time(symbol, static_df, time_diff):
             utils.logger.info(f'{symbol}. timestamps well coupled, using only CSV')
             df_result = static_df#.copy()
-        
+
         else:
             utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
             dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, (last_tms))
@@ -156,7 +156,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
         output_file = Path(static_path)
         output_file.parent.mkdir(exist_ok=True, parents=True)
         df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks)
-    
+
     if save_csv:
         utils.logger.info(f'saving CSV {static_path}')
         df_result.to_csv(static_path, index=False)
