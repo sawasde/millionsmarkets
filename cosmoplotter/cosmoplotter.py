@@ -15,9 +15,9 @@ TMS_TRESSHOLD_SEC = 260
 
 
 @utils.logger.catch
-def plotter(symbol, df, day):
+def plotter(symbol, df_initial, day):
 
-    df_result = cosmomixins.aux_format_plotter_df(df, day)
+    df_result = cosmomixins.aux_format_plotter_df(df_initial, day)
 
     png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
 

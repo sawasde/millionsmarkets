@@ -1,4 +1,5 @@
 """ Utils module containing helper functions """
+# pylint: disable=import-error
 
 import asyncio
 import string

@@ -1,11 +1,15 @@
-from time import time
-import pandas as pd
+""" Helper Module for cosmo code """
+# pylint: disable=no-name-in-module, import-error
+
 import os
-from utils import utils, dynamodb
 from pathlib import Path
+import pandas as pd
+from utils import utils, dynamodb
+
 
 @utils.logger.catch
 def get_cosmobot_time(timestamp=None):
+    """ Get special cosmobot time """
 
     if not timestamp:
         timestamp = int(utils.get_timestamp(multiplier=1))
@@ -18,12 +22,14 @@ def get_cosmobot_time(timestamp=None):
 
 @utils.logger.catch
 def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
+    """ Get data from Dynamo nad convert it to pandas DataFrame """
 
     dfs = []
-    cosmo_time_now, week_now, year_now, date_now, tms_now = get_cosmobot_time()
+    week_now = get_cosmobot_time()[1]
+    year_now = get_cosmobot_time()[2]
 
     if timestamp:
-        cosmo_time_tms, week_tms, year_tms, date_tms, tms_tms = get_cosmobot_time(timestamp)
+        week_tms = get_cosmobot_time(timestamp)[1]
 
         week_delta = week_now - week_tms
 
@@ -43,7 +49,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
         # if first days of year
         if week_delta <= 0:
             week_delta = 52 - abs(week_delta)
-            year_delta = year_now -1
+            year_delta -= 1
 
         last_n_weeks.append(f'{year_delta}_{week_delta}')
 
@@ -54,7 +60,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
                                             table_name=f'mm_cosmobot_historical_{symbol}',
                                             pkey='week',
                                             pvalue=week,
-                                            type='both',
+                                            query_type='both',
                                             skey='timestamp',
                                             svalue=timestamp,
                                             scond='gte',
@@ -78,10 +84,11 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
 
 
 @utils.logger.catch
-def aux_format_dynamo_df(df):
+def aux_format_dynamo_df(df_inital):
+    """ Establish a good format DataFrame """
 
     to_float_cols = ['ptrend', 'mtrend', 'strend', 'pclose', 'pd_limit', 'pz_limit']
-    df_result = df#.copy()
+    df_result = df_inital.copy()
 
     # Drop week columns
     if 'week' in df_result.columns:
@@ -96,16 +103,18 @@ def aux_format_dynamo_df(df):
 
 
 @utils.logger.catch
-def aux_format_plotter_df(df, day=31, yaxis='ptrend'):
+def aux_format_plotter_df(df_initial, day=31, yaxis='ptrend'):
+    """ Establish a good format DataFrame to plot """
+
     utils.logger.info('Format DF including area')
 
-    df['zero_bound'] = 0
+    df_initial['zero_bound'] = 0
 
-    if len(df) < 2:
-        return df
+    if len(df_initial) < 2:
+        return df_initial
 
     day_tms = utils.date_ago_timestmp(xtb_tms=False, days=int(day))
-    df_result = df[df['timestamp'] >= day_tms]
+    df_result = df_initial[df_initial['timestamp'] >= day_tms]
 
     # AREA STUFF
     df_result = utils.integrate_area_below(df_result, yaxis=yaxis, dx_portion=1)
@@ -114,12 +123,15 @@ def aux_format_plotter_df(df, day=31, yaxis='ptrend'):
 
 
 @utils.logger.catch
-def check_time(symbol, df, time_diff=260):
+def check_time(symbol, df_initial, time_diff=260):
+    """ Check if the diff time is high to update local data """
+
     tms = int(utils.get_timestamp(multiplier=1))
-    last_tms = int(df['timestamp'].iloc[-1])
+    last_tms = int(df_initial['timestamp'].iloc[-1])
 
     diff = tms - last_tms
-    utils.logger.info(f'{symbol} Last tms: {utils.timestamp_to_date(last_tms)} Diff: {diff} seconds')
+    utils.logger.info(f'Last tms: {utils.timestamp_to_date(last_tms)}')
+    utils.logger.info(f'{symbol} Diff: {diff} seconds')
 
     if diff > time_diff:
         utils.logger.info(f'tms not sync. {diff} diff seconds')
@@ -130,7 +142,9 @@ def check_time(symbol, df, time_diff=260):
 
 
 @utils.logger.catch
-def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save_csv=True):
+def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save=True):
+    """ Main function to get data from dynamo compared and optimed to the local data """
+    # pylint: disable=too-many-arguments
 
     if os.path.exists(static_path):
         utils.logger.info(f'Found CSV {static_path}')
@@ -157,9 +171,8 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
         output_file.parent.mkdir(exist_ok=True, parents=True)
         df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks)
 
-    if save_csv:
+    if save:
         utils.logger.info(f'saving CSV {static_path}')
         df_result.to_csv(static_path, index=False)
 
     return df_result
-

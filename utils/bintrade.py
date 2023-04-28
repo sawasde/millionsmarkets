@@ -1,52 +1,63 @@
-from utils import utils
+""" Binance module to get Crypto data """
+# pylint: disable=no-name-in-module, import-error
 import pandas as pd
+from utils import utils
 
 
 @utils.logger.catch
 def get_price_by_symbol(all_crypto_price, symbol='BTCBUSD'):
+    """ Get the current price of symbol """
 
-	for sym_dic in all_crypto_price:
+    for sym_dic in all_crypto_price:
 
-		if sym_dic['symbol'] == symbol:
-			return float(sym_dic['price'])
+        if sym_dic['symbol'] == symbol:
+            return float(sym_dic['price'])
 
-	return 0.0
+    return 0.0
 
 
 @utils.logger.catch
 def get_spot_balance(bin_client):
-	info = bin_client.get_account()
-	balances = info['balances']
-	free_total = 0.0
-	locked_total = 0.0
+    """ Get the current Spot balance """
 
-	for item in balances:
-		sym = item['asset']
-		free = float(item['free'])
-		locked = float(item['locked'])
+    info = bin_client.get_account()
+    balances = info['balances']
+    free_total = 0.0
+    locked_total = 0.0
 
-		print(sym, free, locked)
+    for item in balances:
+        sym = item['asset']
+        free = float(item['free'])
+        locked = float(item['locked'])
 
-		free_total += free * get_price_by_symbol(sym+'BUSD')
-		locked_total += locked * get_price_by_symbol(sym+'BUSD')
+        print(sym, free, locked)
 
-	return (free_total, locked_total)
+        free_total += free * get_price_by_symbol(sym+'BUSD')
+        locked_total += locked * get_price_by_symbol(sym+'BUSD')
+
+    return (free_total, locked_total)
+
 
 @utils.logger.catch
-def get_chart_data(bin_client, symbol, start='', end='', period=None, df=True, decimal=True, ohclv=True):
-	''' Return Symbol Market Data as list or dataframe'''
-	data = bin_client.get_historical_klines(symbol, period, start, end)
+def get_chart_data(bin_client, symbol, start='', end='', period=None,
+                                is_df=True, decimal=True, ohclv=True):
+    """ Return Symbol Market Data as list or dataframe """
+    # pylint: disable=too-many-arguments
 
-	if df:
-		data = pd.DataFrame(data).astype(float)
-		data.columns = ['date' , 'open', 'high', 'low', 'close', 'volume', 'ctms', 'qav', 'not', 'tbbav', 'tbqasv', 'i']
+    data = bin_client.get_historical_klines(symbol, period, start, end)
 
-		data.date = data.date.astype(int)
-		
-		if not decimal:
-			data = data.apply(lambda x: x * pow(10,8) if x.name in ['open', 'high', 'low', 'close'] else x)
+    if is_df:
+        data = pd.DataFrame(data).astype(float)
+        data.columns = ['date' , 'open', 'high', 'low', 'close', 'volume',
+                                'ctms', 'qav', 'not', 'tbbav', 'tbqasv', 'i']
 
-	if ohclv:
-		data = data[['date', 'open', 'close', 'high', 'low', 'volume']]		
-	
-	return data
+        data.date = data.date.astype(int)
+
+        if not decimal:
+            data = data.apply(lambda x:
+                              x*pow(10,8) if x.name in ['open', 'high', 'low', 'close'] else x)
+
+    if ohclv:
+        data = data[['date', 'open', 'close', 'high', 'low', 'volume']]
+
+    return data

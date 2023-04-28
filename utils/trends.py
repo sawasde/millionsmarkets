@@ -1,5 +1,5 @@
 """ Custom Indicators module """
-# pylint: disable=no-name-in-module
+# pylint: disable=no-name-in-module, import-error
 
 from utils import utils
 
