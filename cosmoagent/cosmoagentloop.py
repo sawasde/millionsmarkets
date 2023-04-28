@@ -1,10 +1,16 @@
+""" Run cosmoagent in a twisted loop """
+# pylint: disable=no-name-in-module, import-error
+
+from twisted.internet import task, reactor
 from cosmoagent import cosmoagent as cat
 from utils import utils
-from twisted.internet import task, reactor
 
 
 @utils.logger.catch
 def launch():
+    """ Load cosmoagent first, then the loop config and run it """
+    # pylint: disable=no-member
+
     cat.launch()
 
     loop_timeout = int(cat.COSMOAGENT_CONFIG['loop_timeout'])

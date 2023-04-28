@@ -1,12 +1,14 @@
+""" Cosmo BOT modulo to send CRYPTO signals"""
+# pylint: disable=no-name-in-module, import-error
+
 import os
-from re import S
-from statistics import mean
-import discord
 import asyncio
+import numpy as np
+import discord
+from binance.client import Client
 from cosmoagent import cosmoagent
 from utils import utils, dynamodb, cosmomixins
-from binance.client import Client
-import numpy as np
+
 
 #Staging
 DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
@@ -38,6 +40,9 @@ ALL_CRYPTO_PRICE = []
 
 @utils.logger.catch
 def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
+    """ Rules to call for a signal """
+    # pylint: disable=unused-argument, too-many-arguments, global-variable-not-assigned
+
     global COSMO_SYMBOLS_SIGNAL
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
@@ -52,7 +57,7 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
         utils.logger.info(f'1st check passed curr_area: {curr_area} limit_area: {limit_area}')
-   
+
         bull_limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
         bear_limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
 
@@ -72,34 +77,40 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
     return trade
 
 @utils.logger.catch
-def find_peaks(initial_array, order=8888, type='max'):
+def find_peaks(initial_array, order=8888, peak_type='max'):
+    """ Find the peaks of an array """
+
     peaks = []
     arrays = np.array_split(np.flip(initial_array), order)
 
-    if type == 'max':
+    if peak_type == 'max':
         for arr in arrays:
             maxi = arr.max()
             if maxi < 0:
                 continue
-            else: 
-                peaks.append(maxi)
-        return np.array(peaks)
+
+            peaks.append(maxi)
+
     else:
         for arr in arrays:
             mini = arr.min()
             if mini > 0:
                 continue
-            else:
-                peaks.append(mini)
-        return np.array(peaks)
+
+            peaks.append(mini)
+
+    return np.array(peaks)
 
 
 @utils.logger.catch
 def update_cosmo_parameters(symbol):
+    """ Update dynamo table with current bot data """
+    # pylint: disable=global-variable-not-assigned
+
     global COSMO_SYMBOLS_PARAMETERS
     utils.logger.info('Update cosmo parameters')
-    
-    symbol_parameter_item = dynamodb.get_item(   AWS_DYNAMO_SESSION, 
+
+    symbol_parameter_item = dynamodb.get_item(   AWS_DYNAMO_SESSION,
                                                 TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
@@ -109,8 +120,8 @@ def update_cosmo_parameters(symbol):
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
-    mtrend_maxima = find_peaks(mtrend_array, order=order_n, type='max')
-    mtrend_minima = find_peaks(mtrend_array, order=order_n, type='min')
+    mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
+    mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
 
     print('MAXI', mtrend_maxima)
     print('MINI', mtrend_minima)
@@ -135,16 +146,24 @@ def update_cosmo_parameters(symbol):
 
 @utils.logger.catch
 def update_cosmo_dfs(symbol):
+    """ Update local variables with current data """
+    # pylint: disable=global-variable-not-assigned
+
     global COSMO_SYMBOLS_DFS
     utils.logger.info('Update cosmo DFs')
-    
+
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
     symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, 5, 521)
     symbol_df = cosmomixins.aux_format_plotter_df(symbol_df, 31)
 
     COSMO_SYMBOLS_DFS[symbol] = symbol_df
 
+
+@utils.logger.catch
 def prepare_msg(call, symbol, mtrend, area, pzlimit, pclose):
+    # pylint: disable=too-many-arguments,
+
+    """ Prepare Discord message """
     # Prepare message
     msg = f'{call} **{symbol}**\n'
     msg += f'Mean trend: {mtrend}\n'
@@ -155,25 +174,28 @@ def prepare_msg(call, symbol, mtrend, area, pzlimit, pclose):
 
 @utils.logger.catch
 async def send_message_if_alert():
+    """ Routine loop to send message in case of signal """
+    # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
+
     global COSMOBOT_CONFIG
     global COSMO_SYMBOLS_SIGNAL
-    
+
     await DISCORD_CLIENT.wait_until_ready()
     channel = DISCORD_CLIENT.get_channel(int(COSMOBOT_CONFIG['discord_channel_id']))
     guild =  DISCORD_CLIENT.get_guild(int(COSMOBOT_CONFIG['discord_server_id']))
-        
+
     while not DISCORD_CLIENT.is_closed():
 
         for symbol in COSMOBOT_CONFIG['crypto_symbols']:
-            
+
             minute = utils.date_now()[4]
 
             # cosmo check every x minutes
             if minute % COSMOBOT_CONFIG['check_df_minutes'] == 0:
-                
+
                 # Get config again
-                COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION, 
-                                                                        TABLE_NAME, 
+                COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
+                                                                        TABLE_NAME,
                                                                         DEBUG )
                 # Update Stuff
                 update_cosmo_dfs(symbol)
@@ -190,7 +212,7 @@ async def send_message_if_alert():
 
             # check for a trading call
             symbol_cosmo_info = cosmoagent.get_planet_trend(symbol, BIN_CLIENT)
-            
+
             if not symbol_cosmo_info[1]:
                 continue
 
@@ -200,7 +222,7 @@ async def send_message_if_alert():
             # send message for trading call
             cosmo_call = check_cosmo_call(*symbol_cosmo_info)
             if cosmo_call:
-                
+
                 # Get Cosmo Variables
                 mtrend = symbol_cosmo_info[2]
                 pzlimit = symbol_cosmo_info[5]
@@ -214,21 +236,23 @@ async def send_message_if_alert():
                 # mention roles
                 discord_role =  guild.get_role(int(COSMOBOT_CONFIG['discord_role_id']))
                 msg += f'{discord_role.mention}'
-                
+
                 # send message. Try 4 times
                 if DEBUG:
                     utils.logger.info(msg)
                 await utils.send_discord_message_attemps(channel, msg, 4)
-        
+
         # loop timeout
         await asyncio.sleep(int(COSMOBOT_CONFIG['loop_timeout']))
 
 
 @DISCORD_CLIENT.event
 async def on_ready():
+    """ Discord ready function """
     utils.logger.info(f'Logged in as {DISCORD_CLIENT.user.name}')
 
 async def on_loop():
+    """ Custom Discord loop function """
     async with DISCORD_CLIENT:
         DISCORD_CLIENT.loop.create_task(send_message_if_alert())
         await DISCORD_CLIENT.start(DISCORD_BOT_TOKEN)
@@ -236,11 +260,14 @@ async def on_loop():
 
 @utils.logger.catch
 def loop_launch():
+    """ Launch function """
+    # pylint: disable=global-statement
+
     global COSMOBOT_CONFIG
     global BIN_CLIENT
-    
+
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG) 
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG)
 
     # Log path
     utils.logger_path(COSMOBOT_CONFIG['log_path'])
@@ -251,6 +278,6 @@ def loop_launch():
     #Binance
     utils.logger.info('AUTH BINANCE')
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
-    
+
     # Discord initialize
     asyncio.run(on_loop())

@@ -13,8 +13,9 @@
 *3.png
 *1.png
 *.csv
-payloads
+payloads/
 *.zip
 
 #debug
 ldcosmoagent.py
+instabot/

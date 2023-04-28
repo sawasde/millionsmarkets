@@ -1,44 +1,53 @@
-from utils import utils
-from boto3.dynamodb.conditions import Key
-import boto3
+""" AWS Dynamo helper module """
+# pylint: disable=no-name-in-module, import-error
+
 import os
+import boto3
+from boto3.dynamodb.conditions import Key
+from utils import utils
 
 @utils.logger.catch
 def load_feature_value_config(dyn_session, table, debug=True):
+    """ Load feature(key) value(value) config table """
+
     utils.logger.info(f'Load Config dict for {table}')
-   
+
     if debug:
         return get_item(dyn_session, table, {'feature' : 'test_config'})
-    else:
-        return get_item(dyn_session, table, {'feature' : 'prod_config'})
+
+    return get_item(dyn_session, table, {'feature' : 'prod_config'})
 
 
 @utils.logger.catch
 def create_session(from_lambda=False):
+    """ Create AWS boto3 session """
+
     if from_lambda:
         return boto3.Session()
-    else:
-        return boto3.Session(
-                            aws_access_key_id=os.getenv('AWS_ACCESS_ID'),
-                            aws_secret_access_key=os.getenv('AWS_SECRET_KEY')
-                            )
+
+    return boto3.Session(
+                        aws_access_key_id=os.getenv('AWS_ACCESS_ID'),
+                        aws_secret_access_key=os.getenv('AWS_SECRET_KEY')
+                        )
 
 @utils.logger.catch
 def get_item(dyn_session, table_name, key, region='sa-east-1'):
+    """ Get a single item from a table given a key """
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
 
     response = table.get_item(Key=key)
-    
+
     if 'Item' in response:
         return response['Item']['value']
-    else:
-        return None
+
+    return None
 
 
 @utils.logger.catch
 def put_item(dyn_session, table_name, item, region='sa-east-1'):
+    """ Put Item to table given a key """
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
@@ -49,7 +58,8 @@ def put_item(dyn_session, table_name, item, region='sa-east-1'):
 
 @utils.logger.catch
 def batch_put_items(dyn_session, table_name, item_list, region='sa-east-1'):
-    
+    """ Put a list of items to a table """
+
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
 
@@ -60,15 +70,18 @@ def batch_put_items(dyn_session, table_name, item_list, region='sa-east-1'):
         )
 
 @utils.logger.catch
-def query_items(dyn_session, table_name, pkey, pvalue, type='partition', skey=None, svalue=None, scond='eq', region='sa-east-1'):
+def query_items(dyn_session, table_name, pkey, pvalue, query_type='partition',
+                skey=None, svalue=None, scond='eq', region='sa-east-1'):
+    """ Query items given partition key:value or/and sorting key:value """
+    # pylint: disable=too-many-arguments
 
     dynamodb = dyn_session.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
 
-    if type == 'partition':
+    if query_type == 'partition':
         pkey_obj = getattr(Key(pkey), 'eq')
         filtering_exp =  pkey_obj(pvalue)
-    elif type == 'both':
+    elif query_type == 'both':
         pkey_obj = getattr(Key(pkey), 'eq')
         skey_obj = getattr(Key(skey), scond)
         filtering_exp = pkey_obj(pvalue) & skey_obj(svalue)
@@ -76,4 +89,3 @@ def query_items(dyn_session, table_name, pkey, pvalue, type='partition', skey=No
     response = table.query(KeyConditionExpression=filtering_exp)
 
     return response['Items']
-
