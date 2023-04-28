@@ -23,9 +23,6 @@ ALL_CRYPTO_PRICE = []
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 
-# General vars
-COSMOAGENT_CONFIG = {}
-
 
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
@@ -63,7 +60,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
 def get_planet_trend(symbol, bin_client=BIN_CLIENT):
     """ Get planet trend indicator data """
-    # pylint: disable=broad-exception-caught, invalid-name
+    # pylint: disable=broad-exception-caught
 
     utils.logger.info(f'Get Planet info for {symbol}')
 
@@ -75,7 +72,7 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
                                                 start='44 days ago',
                                                 end='now',
                                                 period=bin_client.KLINE_INTERVAL_1DAY,
-                                                df=True,
+                                                is_df=True,
                                                 decimal=True)
 
         ptrend, pclose, pd_limit, pz_limit = trends.planets_volume(trend_data)
@@ -84,8 +81,8 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
 
         return (symbol, ptrend, minfo[0], sinfo[0], pd_limit, pz_limit, pclose)
 
-    except Exception as e:
-        utils.logger.error(e)
+    except Exception as exc:
+        utils.logger.error(exc)
         return (symbol, None, None, None, None, None, None)
 
 
@@ -93,20 +90,14 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
 @utils.logger.catch
 def run():
     """ Run cosmoagent"""
-    # pylint: disable=global-statement
-    global ALL_CRYPTO_PRICE
-    global COSMOAGENT_CONFIG
-
-	# Get all crypto assets price
-    ALL_CRYPTO_PRICE = BIN_CLIENT.get_all_tickers()
 
 	# Load config in loop
-    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+    cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
                                                             'mm_cosmoagent',
                                                             DEBUG)
 
     # loop crypto
-    for symbol in COSMOAGENT_CONFIG['crypto_symbols']:
+    for symbol in cosmoagent_config['crypto_symbols']:
 
         symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
 
@@ -121,21 +112,20 @@ def launch(event=None, context=None):
     """ Load configs and run once the agent"""
     # pylint: disable=unused-argument, global-statement
 
-    global COSMOAGENT_CONFIG
     global BIN_CLIENT
 
     print (utils.logger)
     # Load config
-    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+    cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
                                                             'mm_cosmoagent' ,
                                                             DEBUG)
 
     # Log path
     if not FROM_LAMBDA:
-        utils.logger_path(COSMOAGENT_CONFIG['log_path'])
+        utils.logger_path(cosmoagent_config['log_path'])
 
     # Log config
-    utils.logger.info(COSMOAGENT_CONFIG)
+    utils.logger.info(cosmoagent_config)
 
     # Binance
     utils.logger.info('AUTH BINANCE')
@@ -147,7 +137,7 @@ def launch(event=None, context=None):
                                         start='1 day ago',
                                         end='now',
                                         period=BIN_CLIENT.KLINE_INTERVAL_1DAY,
-                                        df=True,
+                                        is_df=True,
                                         decimal=True)
         print(klines)
 
