@@ -19,3 +19,7 @@ payloads/
 #debug
 ldcosmoagent.py
 instabot/
+
+#Iac
+.terraform/
+*terraform.*
