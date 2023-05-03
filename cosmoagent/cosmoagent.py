@@ -11,12 +11,12 @@ from utils import utils, trends, bintrade, dynamodb
 from utils import cosmomixins
 
 #Staging
-DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
-FROM_LAMBDA = bool(int(os.getenv('COSMOBOT_FROM_LAMBDA')))
+DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Binance variables
-BIN_API_KEY = os.environ['BIN_API_KEY']
-BIN_API_SECRET = os.environ['BIN_API_SECRET']
+BIN_API_KEY = os.environ['TF_VAR_BIN_API_KEY']
+BIN_API_SECRET = os.environ['TF_VAR_BIN_API_SECRET']
 BIN_CLIENT = None
 ALL_CRYPTO_PRICE = []
 

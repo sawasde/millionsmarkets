@@ -11,10 +11,10 @@ from utils import utils, dynamodb, cosmomixins
 
 
 #Staging
-DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
+DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
 
 # Discord vars
-DISCORD_BOT_TOKEN = os.getenv('COSMOBOT_TOKEN')
+DISCORD_BOT_TOKEN = os.getenv('TF_VAR_COSMOBOT_TOKEN')
 DISCORD_INTENTS = discord.Intents.default()
 DISCORD_INTENTS.members = True
 DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
@@ -32,8 +32,8 @@ COSMO_SYMBOLS_DFS = {}
 COSMO_SYMBOLS_SIGNAL = {}
 
 # Binance variables
-BIN_API_KEY = os.environ['BIN_API_KEY']
-BIN_API_SECRET = os.environ['BIN_API_SECRET']
+BIN_API_KEY = os.environ['TF_VAR_BIN_API_KEY']
+BIN_API_SECRET = os.environ['TF_VAR_BIN_API_SECRET']
 BIN_CLIENT = None
 ALL_CRYPTO_PRICE = []
 

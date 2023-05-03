@@ -2,27 +2,6 @@ provider "aws" {
   region = var.region
 }
 
-variable region {
-  type = string
-  default = "sa-east-1"
-}
-
-data "aws_iam_role" "mm_lambda_role" {
-  name = "lambda-mm-basic-role"
-}
-
-data "aws_lambda_layer_version" "binance_layer" {
-  layer_name = "binance-layer"
-}
-
-data "aws_lambda_layer_version" "loguru_layer" {
-  layer_name = "loguru-layer"
-}
-
-module "cosmoagent" {
-  source = "./cosmoagent"
-}
-
 ### COSMO AGENT IAC
 
 resource "terraform_data" "cosmoagent_lambda_zip" {
@@ -42,7 +21,10 @@ resource "aws_lambda_function" "cosmoagent_lambda" {
 
   environment {
     variables = {
-      foo = "bar"
+      TF_VAR_BIN_API_KEY = var.BIN_API_KEY
+      TF_VAR_BIN_API_SECRET = var.BIN_API_SECRET
+      TF_VAR_COSMOBOT_DEBUG = var.COSMOBOT_DEBUG
+      TF_VAR_COSMOBOT_FROM_LAMBDA = var.COSMOBOT_FROM_LAMBDA
     }
   }
 
