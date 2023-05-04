@@ -14,10 +14,11 @@ resource "terraform_data" "cosmoagent_lambda_zip" {
 resource "aws_lambda_function" "cosmoagent_lambda" {
 
   filename      = "cosmoagent.zip"
-  function_name = "cosmoagent_lambda"
+  function_name = var.COSMOBOT_DEBUG == "1" ? "cosmoagent_lambda_test" : "cosmoagent_lambda"
   role          = data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
+  timeout       = 60
 
   environment {
     variables = {

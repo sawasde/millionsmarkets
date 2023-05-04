@@ -133,13 +133,13 @@ def launch(event=None, context=None):
 
     if DEBUG:
         klines = bintrade.get_chart_data(BIN_CLIENT,
-                                        'SOLBUSD',
+                                        'BTCUSDT',
                                         start='1 day ago',
                                         end='now',
                                         period=BIN_CLIENT.KLINE_INTERVAL_1DAY,
                                         is_df=True,
                                         decimal=True)
-        print(klines)
+        utils.logger.info(klines)
 
     # Start bot
     run()
