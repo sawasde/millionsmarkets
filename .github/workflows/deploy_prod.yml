@@ -14,8 +14,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TF_VAR_BIN_API_KEY : ${{ secrets.TF_VAR_BIN_API_KEY }}
       TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
-      TF_VAR_COSMOBOT_DEBUG : ${{ env.TF_VAR_COSMOBOT_DEBUG }}
-      TF_VAR_COSMOBOT_FROM_LAMBDA : ${{ env.TF_VAR_COSMOBOT_FROM_LAMBDA }}
 
     steps:
     - uses: actions/checkout@v3
@@ -42,4 +40,7 @@ jobs:
       run: terraform import aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_lambda/event-bridge-trigger-cosmoagent 2>/dev/null
 
     - name: Terraform apply
+      env:
+        TF_VAR_COSMOBOT_DEBUG : ${{ env.TF_VAR_COSMOBOT_DEBUG }}
+        TF_VAR_COSMOBOT_FROM_LAMBDA : ${{ env.TF_VAR_COSMOBOT_FROM_LAMBDA }}
       run: terraform apply --auto-approve
