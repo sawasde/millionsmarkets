@@ -37,5 +37,4 @@ jobs:
         TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
         TF_VAR_COSMOBOT_DEBUG : ${{ env.TF_VAR_COSMOBOT_DEBUG }}
         TF_VAR_COSMOBOT_FROM_LAMBDA : ${{ env.TF_VAR_COSMOBOT_FROM_LAMBDA }}
-
       run: terraform apply --auto-approve -input=false
