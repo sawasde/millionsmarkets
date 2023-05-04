@@ -1,0 +1,44 @@
+name: Deploy Production
+
+on:
+  pull_request:
+    branches:
+    - main
+  workflow_run:
+    workflows: ["tests"]
+    branches: [main]
+    types:
+    - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install zip
+      run: sudo apt-get install -y zip
+
+    - name: Setup Terraform CLI
+      uses: hashicorp/setup-terraform@v4.65.0
+
+    - name: Verify Terraform version
+      run: terraform --version
+
+    - name: Terraform init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: terraform init -input=false
+
+    - name: Terraform validation
+      run: terraform validate
+
+    - name: Terraform apply
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        TF_VAR_BIN_API_KEY : ${{ secrets.TF_VAR_BIN_API_KEY }}
+        TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
+
+      run: terraform apply -auto-approve -input=false
