@@ -1,14 +1,9 @@
 name: deploy-prod
 
 on:
-  pull_request:
+  push:
     branches:
     - main
-  workflow_run:
-    workflows: ["tests"]
-    branches: [main]
-    types:
-    - completed
 
 jobs:
   deploy:
@@ -20,7 +15,7 @@ jobs:
       run: sudo apt-get install -y zip
 
     - name: Setup Terraform CLI
-      uses: hashicorp/setup-terraform@v1.4.6
+      uses: hashicorp/setup-terraform@v2
 
     - name: Verify Terraform version
       run: terraform --version
@@ -40,5 +35,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         TF_VAR_BIN_API_KEY : ${{ secrets.TF_VAR_BIN_API_KEY }}
         TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
+        TF_VAR_COSMOBOT_DEBUG : ${{ env.TF_VAR_COSMOBOT_DEBUG }}
+        TF_VAR_COSMOBOT_FROM_LAMBDA : ${{ env.TF_VAR_COSMOBOT_FROM_LAMBDA }}
 
       run: terraform apply --auto-approve -input=false
