@@ -14,7 +14,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TF_VAR_BIN_API_KEY : ${{ secrets.TF_VAR_BIN_API_KEY }}
       TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
-      TF_LOG : "DEBUG"
 
     steps:
     - uses: actions/checkout@v3
@@ -23,13 +22,16 @@ jobs:
       run: sudo apt-get install -y zip
 
     - name: Setup Terraform CLI
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v2
 
     - name: Verify Terraform version
       run: terraform --version
 
     - name: Terraform init
       run: terraform init --input=false
+
+    - name: Terraform Plan
+      run: terraform plan
 
     - name: Terraform validation
       run: terraform validate
