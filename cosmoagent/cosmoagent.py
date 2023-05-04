@@ -11,12 +11,12 @@ from utils import utils, trends, bintrade, dynamodb
 from utils import cosmomixins
 
 #Staging
-DEBUG = bool(int(os.getenv('COSMOBOT_DEBUG')))
-FROM_LAMBDA = bool(int(os.getenv('COSMOBOT_FROM_LAMBDA')))
+DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Binance variables
-BIN_API_KEY = os.environ['BIN_API_KEY']
-BIN_API_SECRET = os.environ['BIN_API_SECRET']
+BIN_API_KEY = os.environ['TF_VAR_BIN_API_KEY']
+BIN_API_SECRET = os.environ['TF_VAR_BIN_API_SECRET']
 BIN_CLIENT = None
 ALL_CRYPTO_PRICE = []
 
@@ -133,13 +133,13 @@ def launch(event=None, context=None):
 
     if DEBUG:
         klines = bintrade.get_chart_data(BIN_CLIENT,
-                                        'SOLBUSD',
+                                        'BTCUSDT',
                                         start='1 day ago',
                                         end='now',
                                         period=BIN_CLIENT.KLINE_INTERVAL_1DAY,
                                         is_df=True,
                                         decimal=True)
-        print(klines)
+        utils.logger.info(klines)
 
     # Start bot
     run()
