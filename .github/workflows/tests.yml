@@ -28,6 +28,3 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
-
-    - name: debug env vars
-      run: echo "${{ env.TF_VAR_COSMOBOT_FROM_LAMBDA }}"
