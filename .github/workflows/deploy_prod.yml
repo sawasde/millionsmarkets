@@ -14,6 +14,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TF_VAR_BIN_API_KEY : ${{ secrets.TF_VAR_BIN_API_KEY }}
       TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
+      TF_LOG : "DEBUG"
 
     steps:
     - uses: actions/checkout@v3
