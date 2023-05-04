@@ -34,11 +34,11 @@ jobs:
       run: terraform validate
 
     - name: Terraform import cosmoagent lambda function
-      run: terraform import aws_lambda_function.cosmoagent_lambda cosmoagent_lambda --input=false
+      run: terraform import --input=false aws_lambda_function.cosmoagent_lambda cosmoagent_lambda
       continue-on-error: true
 
     - name: Terraform import cosmoagent lambda trigger
-      run: terraform import aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_lambda/event-bridge-trigger-cosmoagent --input=false
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_lambda/event-bridge-trigger-cosmoagent
       continue-on-error: true
 
     - name: Terraform apply
