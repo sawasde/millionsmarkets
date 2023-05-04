@@ -141,5 +141,5 @@ def launch(event=None, context=None):
                                         decimal=True)
         utils.logger.info(klines)
 
-    # Start bot
+    # Start bot run()
     run()
