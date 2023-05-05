@@ -39,9 +39,5 @@ jobs:
       run: terraform import --input=false aws_lambda_function.cosmoagent_lambda cosmoagent_lambda
       continue-on-error: true
 
-    - name: Terraform import cosmoagent lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_lambda/event-bridge-trigger-cosmoagent
-      continue-on-error: true
-
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
