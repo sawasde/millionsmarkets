@@ -52,6 +52,7 @@ resource "aws_lambda_function" "cosmobot_lambda" {
   role          = data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
+  memory_size   = 1280
   timeout       = 200
 
   environment {
