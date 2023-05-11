@@ -17,9 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: "Say DEBUG!"
-      run: echo "haha yea $DEBUG and here ${{ vars.TF_VAR_COSMOBOT_DEBUG }}"
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
