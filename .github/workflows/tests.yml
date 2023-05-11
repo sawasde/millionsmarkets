@@ -7,7 +7,7 @@ on:
     - "!main"
 
 env:
-  DEBUG: ${{ env.TF_VAR_COSMOBOT_DEBUG }}
+  DEBUG: ${{ vars.TF_VAR_COSMOBOT_DEBUG }}
 
 jobs:
   build:
