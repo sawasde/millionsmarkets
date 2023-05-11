@@ -1,4 +1,4 @@
-""" Cosmo BOT modulo to send CRYPTO signals"""
+""" Cosmo BOT module to send CRYPTO signals calls"""
 # pylint: disable=no-name-in-module, import-error
 
 import os
@@ -9,13 +9,14 @@ from utils import utils, dynamodb, cosmomixins
 
 #Staging
 DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Discord vars
 DISCORD_COSMOBOT_HOOK_URL = ''
 DISCORD_COSMOBOT_ROLE = ''
 
 # AWS Dynamo
-AWS_DYNAMO_SESSION = dynamodb.create_session()
+AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 TABLE_NAME = 'mm_cosmobot'
 
 # General vars
@@ -55,6 +56,7 @@ def check_cosmo_call(symbol, mtrend):
             trade = 'SELL'
 
     return trade
+
 
 @utils.logger.catch
 def find_peaks(initial_array, order=8888, peak_type='max'):
@@ -132,7 +134,13 @@ def update_cosmo_dfs(symbol):
     utils.logger.info('Update cosmo DFs')
 
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
-    symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol, csv_path, 5, 521)
+    if FROM_LAMBDA:
+        symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
+                                                           symbol, csv_path, 5, 521, False)
+    else:
+        symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
+                                                           symbol, csv_path, 5, 521, True)
+
     symbol_df = cosmomixins.aux_format_plotter_df(symbol_df, 31)
 
     COSMO_SYMBOLS_DFS[symbol] = symbol_df
@@ -186,8 +194,6 @@ def run():
             utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
 
-
-
 @utils.logger.catch
 def launch(event=None, context=None):
     """ Launch function """
@@ -198,10 +204,14 @@ def launch(event=None, context=None):
     global DISCORD_COSMOBOT_ROLE
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG)
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME, DEBUG)
 
-    # Log config
-    utils.logger.info(COSMOBOT_CONFIG)
+    # Log path
+    if not FROM_LAMBDA:
+        utils.logger_path(COSMOBOT_CONFIG['log_path'])
+
+    # Log discord
+    utils.logger.info('Load Discord vars')
 
     # Discord URL
     if DEBUG:

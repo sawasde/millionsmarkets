@@ -36,4 +36,37 @@ resource "aws_lambda_function" "cosmoagent_lambda" {
   depends_on = [ terraform_data.cosmoagent_lambda_zip ]
 }
 
-### COSMO BOT
+### COSMO BOT IAC
+
+resource "terraform_data" "cosmobot_lambda_zip" {
+  provisioner "local-exec" {
+    command = "zip -r cosmobot.zip cosmobot utils"
+    interpreter = ["/bin/bash", "-c"]
+  }
+}
+
+resource "aws_lambda_function" "cosmobot_lambda" {
+
+  filename      = "cosmobot.zip"
+  function_name = var.COSMOBOT_DEBUG == "1" ? "cosmobot_lambda_test" : "cosmobot_lambda"
+  role          = data.aws_iam_role.mm_lambda_role.arn
+  handler       = "cosmobot.cosmobot.launch"
+  runtime       = "python3.9"
+  memory_size   = 1280
+  timeout       = 200
+
+  environment {
+    variables = {
+      TF_VAR_COSMOBOT_DEBUG = var.COSMOBOT_DEBUG
+      TF_VAR_COSMOBOT_FROM_LAMBDA = var.COSMOBOT_FROM_LAMBDA
+      TF_VAR_COSMOBOT_DISCORD_HOOK_URL = var.COSMOBOT_DISCORD_HOOK_URL
+      TF_VAR_COSMOBOT_DISCORD_ROLE = var.COSMOBOT_DISCORD_ROLE
+    }
+  }
+
+  layers = [ data.aws_lambda_layer_version.binance_layer.arn,
+            data.aws_lambda_layer_version.loguru_layer.arn,
+            "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
+
+  depends_on = [ terraform_data.cosmobot_lambda_zip ]
+}
