@@ -19,6 +19,15 @@ variable "COSMOBOT_FROM_LAMBDA" {
     type = string
 }
 
+variable "COSMOBOT_DISCORD_HOOK_URL" {
+    type = string
+}
+
+variable "COSMOBOT_DISCORD_ROLE" {
+    type = string
+}
+
+
 data "aws_iam_role" "mm_lambda_role" {
   name = "lambda-mm-basic-role"
 }

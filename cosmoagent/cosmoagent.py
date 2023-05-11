@@ -10,7 +10,7 @@ from binance.client import Client
 from utils import utils, trends, bintrade, dynamodb
 from utils import cosmomixins
 
-#Staging
+# Staging
 DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
@@ -22,6 +22,7 @@ ALL_CRYPTO_PRICE = []
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
+TABLE_NAME = 'mm_cosmoagnet'
 
 
 @utils.logger.catch
@@ -93,7 +94,7 @@ def run():
 
 	# Load config in loop
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            'mm_cosmoagent',
+                                                            TABLE_NAME,
                                                             DEBUG)
 
     # loop crypto
@@ -117,15 +118,12 @@ def launch(event=None, context=None):
     print (utils.logger)
     # Load config
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            'mm_cosmoagent' ,
+                                                            TABLE_NAME ,
                                                             DEBUG)
 
     # Log path
     if not FROM_LAMBDA:
         utils.logger_path(cosmoagent_config['log_path'])
-
-    # Log config
-    utils.logger.info(cosmoagent_config)
 
     # Binance
     utils.logger.info('AUTH BINANCE')
