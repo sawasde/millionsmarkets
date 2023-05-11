@@ -93,10 +93,10 @@ def date_oper_timestamp_and_date(tms, xtb_tms=True, oper='+', **kwargs):
 
 
 @logger.catch
-def get_timestamp(multiplier=1):
+def get_timestamp(multiplier=1, tmz='America/Bogota'):
     """ Get current timestamp in ms """
 
-    now = dt.datetime.now(pytz.timezone('America/Bogota'))
+    now = dt.datetime.now(pytz.timezone(tmz))
     result = int(dt.datetime.timestamp(now))
 
     return result*multiplier
