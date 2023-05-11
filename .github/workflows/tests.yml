@@ -9,11 +9,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DEBUG: ${{ vars.TF_VAR_COSMOBOT_DEBUG }}
     strategy:
       matrix:
         python-version: ["3.9"]
     steps:
     - uses: actions/checkout@v3
+
+    - name: "Say DEBUG!"
+      run: echo "$DEBUG"
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
