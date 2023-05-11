@@ -11,10 +11,8 @@ from utils import utils, dynamodb, cosmomixins
 DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
 
 # Discord vars
-#DISCORD_HOOK_KEY = os.getenv('TF_VAR_COSMOBOT_DISCORD_HOOK_KEY')
-#DISCORD_INTENTS = discord.Intents.default()
-#DISCORD_INTENTS.members = True
-#DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
+DISCORD_COSMOBOT_HOOK_URL = ''
+DISCORD_COSMOBOT_ROLE = ''
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session()
@@ -141,17 +139,15 @@ def update_cosmo_dfs(symbol):
 
 
 @utils.logger.catch
-def prepare_msg(call, symbol, mtrend, area, pzlimit, pclose):
-    # pylint: disable=too-many-arguments,
-
+def prepare_msg(call, symbol, mtrend, pclose, role):
     """ Prepare Discord message """
     # Prepare message
     msg = f'{call} **{symbol}**\n'
-    msg += f'Mean trend: {mtrend}\n'
-    msg += f'Longterm trend: {area}\n'
-    msg += f'Limit price: ${pzlimit}\n'
-    msg += f'Current price: ${pclose}\n'
+    msg += f'**Cosmo Trend**: {mtrend:.2f}\n'
+    msg += f'**Price**: ${pclose:,}\n'
+    msg += f'<@&{role}>'
     return msg
+
 
 @utils.logger.catch
 def run():
@@ -171,19 +167,23 @@ def run():
         mtrend = symbol_cosmo_info['mtrend']
 
         cosmo_call = check_cosmo_call(symbol, mtrend)
-        if cosmo_call:
+        if DEBUG:
+            cosmo_call = 'BUY'
 
+        if cosmo_call:
+            utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
         # Get Cosmo Variables
-            pzlimit = symbol_cosmo_info['pzlimit']
             pclose = symbol_cosmo_info['pclose']
             area = symbol_cosmo_info['area']
             area = '{:.2e}'.format(area)
 
             # Prepare message
-            msg = prepare_msg(cosmo_call, symbol, mtrend, area, pzlimit, pclose)
+            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
 
             if DEBUG:
                 utils.logger.info(msg)
+
+            utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
 
 
@@ -194,12 +194,22 @@ def launch(event=None, context=None):
     # pylint: disable=unused-argument, disable=global-statement
 
     global COSMOBOT_CONFIG
+    global DISCORD_COSMOBOT_HOOK_URL
+    global DISCORD_COSMOBOT_ROLE
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG)
 
     # Log config
     utils.logger.info(COSMOBOT_CONFIG)
+
+    # Discord URL
+    if DEBUG:
+        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL_TEST']
+        DISCORD_COSMOBOT_ROLE= os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE_TEST']
+    else:
+        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL']
+        DISCORD_COSMOBOT_ROLE = os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE']
 
     # Run
     run()
