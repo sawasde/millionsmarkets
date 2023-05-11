@@ -22,7 +22,7 @@ ALL_CRYPTO_PRICE = []
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-TABLE_NAME = 'mm_cosmoagnet'
+TABLE_NAME = 'mm_cosmoagent'
 
 
 @utils.logger.catch
