@@ -2,11 +2,8 @@
 # pylint: disable=no-name-in-module, import-error
 
 import os
-import asyncio
 import numpy as np
-import discord
-from binance.client import Client
-from cosmoagent import cosmoagent
+#import discord
 from utils import utils, dynamodb, cosmomixins
 
 
@@ -14,10 +11,8 @@ from utils import utils, dynamodb, cosmomixins
 DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
 
 # Discord vars
-DISCORD_BOT_TOKEN = os.getenv('TF_VAR_COSMOBOT_TOKEN')
-DISCORD_INTENTS = discord.Intents.default()
-DISCORD_INTENTS.members = True
-DISCORD_CLIENT = discord.Client(intents=DISCORD_INTENTS)
+DISCORD_COSMOBOT_HOOK_URL = ''
+DISCORD_COSMOBOT_ROLE = ''
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session()
@@ -29,30 +24,17 @@ SYMBOLS_BASE_PATH = 'cosmobot/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 COSMO_SYMBOLS_PARAMETERS = {}
 COSMO_SYMBOLS_DFS = {}
-COSMO_SYMBOLS_SIGNAL = {}
-
-# Binance variables
-BIN_API_KEY = os.environ['TF_VAR_BIN_API_KEY']
-BIN_API_SECRET = os.environ['TF_VAR_BIN_API_SECRET']
-BIN_CLIENT = None
-ALL_CRYPTO_PRICE = []
 
 
 @utils.logger.catch
-def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
+def check_cosmo_call(symbol, mtrend):
     """ Rules to call for a signal """
-    # pylint: disable=unused-argument, too-many-arguments, global-variable-not-assigned
-
-    global COSMO_SYMBOLS_SIGNAL
+    # pylint: disable=global-variable-not-assigned
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
     # filter mtrend
     trade = None
-
-    # if current signal already sent, wait x minutes to reset
-    if COSMO_SYMBOLS_SIGNAL[symbol]:
-        return None
 
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
@@ -65,14 +47,12 @@ def check_cosmo_call(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose)
         # BUY
         if mtrend < (bear_limit_mtrend):
             utils.logger.info(f'2nd check passed BUY mtrend: {mtrend}')
-            trade = 'BUY' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
-            COSMO_SYMBOLS_SIGNAL[symbol] = True
+            trade = 'BUY'
 
         # SELL
         if mtrend > (bull_limit_mtrend):
             utils.logger.info(f'2nd check passed SELL mtrend: {mtrend}')
-            trade = 'SELL' if not COSMO_SYMBOLS_SIGNAL[symbol] else None
-            COSMO_SYMBOLS_SIGNAL[symbol] = True
+            trade = 'SELL'
 
     return trade
 
@@ -86,7 +66,7 @@ def find_peaks(initial_array, order=8888, peak_type='max'):
     if peak_type == 'max':
         for arr in arrays:
             maxi = arr.max()
-            if maxi < 0:
+            if maxi < 0.1:
                 continue
 
             peaks.append(maxi)
@@ -94,9 +74,8 @@ def find_peaks(initial_array, order=8888, peak_type='max'):
     else:
         for arr in arrays:
             mini = arr.min()
-            if mini > 0:
+            if mini > -0.1:
                 continue
-
             peaks.append(mini)
 
     return np.array(peaks)
@@ -110,7 +89,7 @@ def update_cosmo_parameters(symbol):
     global COSMO_SYMBOLS_PARAMETERS
     utils.logger.info('Update cosmo parameters')
 
-    symbol_parameter_item = dynamodb.get_item(   AWS_DYNAMO_SESSION,
+    symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
                                                 TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
@@ -160,124 +139,77 @@ def update_cosmo_dfs(symbol):
 
 
 @utils.logger.catch
-def prepare_msg(call, symbol, mtrend, area, pzlimit, pclose):
-    # pylint: disable=too-many-arguments,
-
+def prepare_msg(call, symbol, mtrend, pclose, role):
     """ Prepare Discord message """
     # Prepare message
     msg = f'{call} **{symbol}**\n'
-    msg += f'Mean trend: {mtrend}\n'
-    msg += f'Longterm trend: {area}\n'
-    msg += f'Limit price: ${pzlimit}\n'
-    msg += f'Current price: ${pclose}\n'
+    msg += f'**Cosmo Trend**: {mtrend:.2f}\n'
+    msg += f'**Price**: ${pclose:,}\n'
+    msg += f'<@&{role}>'
     return msg
 
+
 @utils.logger.catch
-async def send_message_if_alert():
+def run():
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
 
     global COSMOBOT_CONFIG
-    global COSMO_SYMBOLS_SIGNAL
 
-    await DISCORD_CLIENT.wait_until_ready()
-    channel = DISCORD_CLIENT.get_channel(int(COSMOBOT_CONFIG['discord_channel_id']))
-    guild =  DISCORD_CLIENT.get_guild(int(COSMOBOT_CONFIG['discord_server_id']))
+    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
 
-    while not DISCORD_CLIENT.is_closed():
+        # Update Stuff
+        update_cosmo_dfs(symbol)
+        update_cosmo_parameters(symbol)
 
-        for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+        # check for a trading call
+        symbol_cosmo_info = COSMO_SYMBOLS_DFS[symbol].iloc[-1]
+        mtrend = symbol_cosmo_info['mtrend']
 
-            minute = utils.date_now()[4]
+        cosmo_call = check_cosmo_call(symbol, mtrend)
+        if DEBUG:
+            cosmo_call = 'BUY'
 
-            # cosmo check every x minutes
-            if minute % COSMOBOT_CONFIG['check_df_minutes'] == 0:
+        if cosmo_call:
+            utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
+        # Get Cosmo Variables
+            pclose = symbol_cosmo_info['pclose']
+            area = symbol_cosmo_info['area']
+            area = '{:.2e}'.format(area)
 
-                # Get config again
-                COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                                        TABLE_NAME,
-                                                                        DEBUG )
-                # Update Stuff
-                update_cosmo_dfs(symbol)
-                update_cosmo_parameters(symbol)
-                COSMO_SYMBOLS_SIGNAL[symbol] = False
-
-            # populate global memory dicts in 1st time run
-            if (not COSMO_SYMBOLS_DFS) or (not COSMO_SYMBOLS_PARAMETERS):
-
-                # Update Stuff
-                update_cosmo_dfs(symbol)
-                update_cosmo_parameters(symbol)
-                COSMO_SYMBOLS_SIGNAL[symbol] = False
-
-            # check for a trading call
-            symbol_cosmo_info = cosmoagent.get_planet_trend(symbol, BIN_CLIENT)
-
-            if not symbol_cosmo_info[1]:
-                continue
+            # Prepare message
+            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
 
             if DEBUG:
-                print(symbol_cosmo_info)
+                utils.logger.info(msg)
 
-            # send message for trading call
-            cosmo_call = check_cosmo_call(*symbol_cosmo_info)
-            if cosmo_call:
-
-                # Get Cosmo Variables
-                mtrend = symbol_cosmo_info[2]
-                pzlimit = symbol_cosmo_info[5]
-                pclose = symbol_cosmo_info[6]
-                area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
-                area = '{:.2e}'.format(area)
-
-                # Prepare message
-                msg = prepare_msg(cosmo_call, symbol, mtrend, area, pzlimit, pclose)
-
-                # mention roles
-                discord_role =  guild.get_role(int(COSMOBOT_CONFIG['discord_role_id']))
-                msg += f'{discord_role.mention}'
-
-                # send message. Try 4 times
-                if DEBUG:
-                    utils.logger.info(msg)
-                await utils.send_discord_message_attemps(channel, msg, 4)
-
-        # loop timeout
-        await asyncio.sleep(int(COSMOBOT_CONFIG['loop_timeout']))
+            utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
 
-@DISCORD_CLIENT.event
-async def on_ready():
-    """ Discord ready function """
-    utils.logger.info(f'Logged in as {DISCORD_CLIENT.user.name}')
-
-async def on_loop():
-    """ Custom Discord loop function """
-    async with DISCORD_CLIENT:
-        DISCORD_CLIENT.loop.create_task(send_message_if_alert())
-        await DISCORD_CLIENT.start(DISCORD_BOT_TOKEN)
 
 
 @utils.logger.catch
-def loop_launch():
+def launch(event=None, context=None):
     """ Launch function """
-    # pylint: disable=global-statement
+    # pylint: disable=unused-argument, disable=global-statement
 
     global COSMOBOT_CONFIG
-    global BIN_CLIENT
+    global DISCORD_COSMOBOT_HOOK_URL
+    global DISCORD_COSMOBOT_ROLE
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot', DEBUG)
 
-    # Log path
-    utils.logger_path(COSMOBOT_CONFIG['log_path'])
-
     # Log config
     utils.logger.info(COSMOBOT_CONFIG)
 
-    #Binance
-    utils.logger.info('AUTH BINANCE')
-    BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
+    # Discord URL
+    if DEBUG:
+        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL_TEST']
+        DISCORD_COSMOBOT_ROLE= os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE_TEST']
+    else:
+        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL']
+        DISCORD_COSMOBOT_ROLE = os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE']
 
-    # Discord initialize
-    asyncio.run(on_loop())
+    # Run
+    run()

@@ -1,12 +1,12 @@
 """ Utils module containing helper functions """
 # pylint: disable=import-error
 
-import asyncio
 import string
 import json
 import datetime as dt
 import pytz
 import numpy as np
+import requests
 from loguru import logger
 
 @logger.catch
@@ -14,26 +14,6 @@ def logger_path(path):
     """ Set the Loguru logger path """
 
     logger.add(path)
-
-# Discord Functions
-async def send_discord_message_attemps(channel, msg, attemps=4, delay=4):
-    """ Loop to try to send a discord message multiple times """
-    # pylint: disable=broad-exception-caught, invalid-name
-
-    try:
-        for i in range(0, attemps):
-            logger.info(f'Sending message. {i} Attempt')
-            sent = await channel.send(msg)
-
-            if sent:
-                logger.info('Successfully sent!')
-                break
-
-            await asyncio.sleep(delay)
-
-    except Exception as e:
-        logger.error(e)
-
 
 @logger.catch
 def hand_json(file, mode, data=None):
@@ -175,3 +155,29 @@ def integrate_area_below(df_inital='', yaxis='', dx_portion=1.0):
         df_result.at[i, 'area'] = area
 
     return df_result.copy()
+
+
+@logger.catch
+def discord_webhhok_send(url, username, content, embed=False, attemps=5):
+    ''' send messages using Discord webhook
+            embed = {"description": "desc", "title": "embed title"}
+    '''
+    while attemps > 0:
+        data = {
+            'content': content,
+            'username': username,
+            }
+
+        if embed:
+            data['embeds'] = [ embed ]
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        result = requests.post(url, json=data, headers=headers, timeout=24)
+
+        if 200 <= result.status_code < 300:
+            break
+        attemps -= 1
+    return result
