@@ -208,8 +208,6 @@ def run():
 
             # Get Cosmo Time Variables
             cosmo_time = cosmomixins.get_cosmobot_time()
-            cosmo_week = cosmo_time[0]
-            cosmo_timestamp = cosmo_time[4]
 
             # Prepare message
             msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
@@ -219,29 +217,29 @@ def run():
 
             utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
-            to_put = {  'week' : cosmo_week,
-                        'timestamp' : cosmo_timestamp,
+            to_put = {  'week' : cosmo_time[0],
+                        'timestamp' : cosmo_time[4],
                         'cosmo_call' : cosmo_call,
                         'symbol' : symbol,
                         'mtrend' : mtrend,
                         'area'   : area,
-                        'ptrend' : ptrend,
                         'strend' : strend,
+                        'ptrend' : ptrend,
                         'pclose' : pclose,
-                        'pd_limit' : pd_limit,
-                        'pz_limit' : pz_limit }
+                        'pz_limit' : pz_limit,
+                        'pd_limit' : pd_limit }
 
             item = json.loads(json.dumps(to_put), parse_float=Decimal)
 
             if DEBUG:
                 dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                    f'mm_cosmobot_calls_test',
+                                    'mm_cosmobot_calls_test',
                                     item,
                                     region='sa-east-1')
 
             else:
                 dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                    f'mm_cosmobot_calls',
+                                    'mm_cosmobot_calls',
                                     item,
                                     region='sa-east-1')
 
