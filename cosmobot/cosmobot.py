@@ -2,6 +2,8 @@
 # pylint: disable=no-name-in-module, import-error
 
 import os
+import json
+from decimal import Decimal
 import numpy as np
 #import discord
 from utils import utils, dynamodb, cosmomixins
@@ -91,9 +93,14 @@ def update_cosmo_parameters(symbol):
     global COSMO_SYMBOLS_PARAMETERS
     utils.logger.info('Update cosmo parameters')
 
-    symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                TABLE_NAME,
-                                                {'feature' : f'{symbol}_parameters'})
+    if DEBUG:
+        symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
+                                                    TABLE_NAME,
+                                                    {'feature' : f'{symbol}_parameters_test'})
+    else:
+        symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
+                                                    TABLE_NAME,
+                                                    {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
 
     # order n
@@ -122,10 +129,16 @@ def update_cosmo_parameters(symbol):
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
     # Put it on dynamo
-    dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        TABLE_NAME,
-                        {'feature' : f'{symbol}_parameters',
-                        'value' : symbol_parameter_item})
+    if DEBUG:
+        dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                    TABLE_NAME,
+                    {'feature' : f'{symbol}_parameters_test',
+                    'value' : symbol_parameter_item})
+    else:
+        dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                            TABLE_NAME,
+                            {'feature' : f'{symbol}_parameters',
+                            'value' : symbol_parameter_item})
 
 
 @utils.logger.catch
@@ -178,15 +191,25 @@ def run():
         mtrend = symbol_cosmo_info['mtrend']
 
         cosmo_call = check_cosmo_call(symbol, mtrend)
+
         if DEBUG:
             cosmo_call = 'BUY'
 
         if cosmo_call:
             utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
-        # Get Cosmo Variables
+            # Get Cosmo Variables
             pclose = symbol_cosmo_info['pclose']
+            ptrend = symbol_cosmo_info['ptrend']
+            strend = symbol_cosmo_info['strend']
+            pd_limit = symbol_cosmo_info['pd_limit']
+            pz_limit = symbol_cosmo_info['pz_limit']
             area = symbol_cosmo_info['area']
             area = '{:.2e}'.format(area)
+
+            # Get Cosmo Time Variables
+            cosmo_time = cosmomixins.get_cosmobot_time()
+            cosmo_week = cosmo_time[0]
+            cosmo_timestamp = cosmo_time[4]
 
             # Prepare message
             msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
@@ -195,6 +218,32 @@ def run():
                 utils.logger.info(msg)
 
             utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
+
+            to_put = {  'week' : cosmo_week,
+                        'timestamp' : cosmo_timestamp,
+                        'cosmo_call' : cosmo_call,
+                        'symbol' : symbol,
+                        'mtrend' : mtrend,
+                        'area'   : area,
+                        'ptrend' : ptrend,
+                        'strend' : strend,
+                        'pclose' : pclose,
+                        'pd_limit' : pd_limit,
+                        'pz_limit' : pz_limit }
+
+            item = json.loads(json.dumps(to_put), parse_float=Decimal)
+
+            if DEBUG:
+                dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                                    f'mm_cosmobot_calls_test',
+                                    item,
+                                    region='sa-east-1')
+
+            else:
+                dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                                    f'mm_cosmobot_calls',
+                                    item,
+                                    region='sa-east-1')
 
 
 @utils.logger.catch
