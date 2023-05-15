@@ -239,11 +239,9 @@ def run():
 @utils.logger.catch
 def launch(event=None, context=None):
     """ Launch function """
-    # pylint: disable=unused-argument, disable=global-statement
+    # pylint: disable=unused-argument, global-statement
 
     global COSMOBOT_CONFIG
-    global DISCORD_COSMOBOT_HOOK_URL
-    global DISCORD_COSMOBOT_ROLE
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
