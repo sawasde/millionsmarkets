@@ -28,11 +28,11 @@ variable "COSMOBOT_DISCORD_ROLE" {
 }
 
 data "aws_iam_role" "mm_lambda_role" {
-  name = "lambda-mm-basic-role"
+  name = "mm_bots_role"
 }
 
 data "aws_iam_role" "mm_lambda_role_staging" {
-  name = "lambda-mm-basic-role"
+  name = "mm_bots_role_staging"
 }
 
 data "aws_lambda_layer_version" "binance_layer" {

@@ -71,8 +71,13 @@ def run(days_ago):
             # Check DFs
             utils.logger.info('Checking DFs')
             csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
-            df_result = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol,
-                                                            csv_path, weeks, 521)
+            df_result = cosmomixins.get_resource_optimized_dfs( AWS_DYNAMO_SESSION,
+                                                                symbol,
+                                                                csv_path,
+                                                                weeks,
+                                                                521,
+                                                                True,
+                                                                STAGING)
 
             # Plot
             utils.logger.info('Plotting ...')

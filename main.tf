@@ -15,7 +15,7 @@ resource "aws_lambda_function" "cosmoagent_lambda" {
 
   filename      = "cosmoagent.zip"
   function_name = var.COSMOBOT_STAGING == "1" ? "cosmoagent_lambda_staging" : "cosmoagent_lambda"
-  role          = data.aws_iam_role.mm_lambda_role.arn
+  role          = var.COSMOBOT_STAGING == "1" ? data.aws_iam_role.mm_lambda_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
   timeout       = 60
@@ -49,7 +49,7 @@ resource "aws_lambda_function" "cosmobot_lambda" {
 
   filename      = "cosmobot.zip"
   function_name = var.COSMOBOT_STAGING == "1" ? "cosmobot_lambda_staging" : "cosmobot_lambda"
-  role          = data.aws_iam_role.mm_lambda_role.arn
+  role          = var.COSMOBOT_STAGING == "1" ? data.aws_iam_role.mm_lambda_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
   memory_size   = 1280

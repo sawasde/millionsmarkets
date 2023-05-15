@@ -21,7 +21,7 @@ def get_cosmobot_time(timestamp=None):
 
 
 @utils.logger.catch
-def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
+def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None, staging=True):
     """ Get data from Dynamo nad convert it to pandas DataFrame """
 
     dfs = []
@@ -54,10 +54,14 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None):
         last_n_weeks.append(f'{year_delta}_{week_delta}')
 
     for week in last_n_weeks:
+        table_name = f'mm_cosmobot_historical_{symbol}'
+
+        if staging:
+            table_name += '_staging'
 
         if timestamp:
             info = dynamodb.query_items(    dyn_session=dyn_session,
-                                            table_name=f'mm_cosmobot_historical_{symbol}',
+                                            table_name=table_name,
                                             pkey='week',
                                             pvalue=week,
                                             query_type='both',
@@ -142,7 +146,7 @@ def check_time(symbol, df_initial, time_diff=260):
 
 
 @utils.logger.catch
-def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save=True):
+def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_diff=260, save=True, staging=True):
     """ Main function to get data from dynamo compared and optimed to the local data """
     # pylint: disable=too-many-arguments
 
@@ -160,7 +164,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
 
         else:
             utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
-            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, (last_tms))
+            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, (last_tms), staging=staging)
 
             df_result = pd.concat([static_df, dynamo_df], ignore_index=True)
             df_result = df_result.sort_values('timestamp')
@@ -170,7 +174,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, static_path, weeks, time_dif
         if save:
             output_file = Path(static_path)
             output_file.parent.mkdir(exist_ok=True, parents=True)
-        df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks)
+        df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks, None, staging=staging)
 
     if save:
         utils.logger.info(f'saving CSV {static_path}')

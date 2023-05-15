@@ -146,10 +146,10 @@ def update_cosmo_dfs(symbol):
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
     if FROM_LAMBDA:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
-                                                           symbol, csv_path, 5, 521, False)
+                                                           symbol, csv_path, 5, 521, False, STAGING)
     else:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
-                                                           symbol, csv_path, 5, 521, True)
+                                                           symbol, csv_path, 5, 521, True, STAGING)
 
     symbol_df = cosmomixins.aux_format_plotter_df(symbol_df, 31)
 
@@ -186,9 +186,6 @@ def run():
 
         cosmo_call = check_cosmo_call(symbol, mtrend)
 
-        if STAGING:
-            cosmo_call = 'BUY'
-
         if cosmo_call:
             utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
             # Get Cosmo Variables
@@ -224,14 +221,14 @@ def run():
                         'pd_limit' : pd_limit }
 
             item = json.loads(json.dumps(to_put), parse_float=Decimal)
-            table = 'mm_cosmobot_calls'
+            table_name = 'mm_cosmobot_calls'
 
             if STAGING:
-                table += '_staging'
+                table_name += '_staging'
 
 
             dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                table,
+                                table_name,
                                 item,
                                 region='sa-east-1')
 

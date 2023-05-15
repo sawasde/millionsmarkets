@@ -11,7 +11,7 @@ resource "aws_cloudwatch_event_rule" "rate_8_minutes" {
 }
 
 resource "aws_cloudwatch_event_target" "cosmoagent_trigger" {
-  target_id = var.COSMOBOOT_STAGING == "1" ? "cosmoagent_event_lambda_staging" : "cosmoagent_event_lambda"
+  target_id = var.COSMOBOT_STAGING == "1" ? "cosmoagent_event_lambda_staging" : "cosmoagent_event_lambda"
   arn = aws_lambda_function.cosmoagent_lambda.arn
   rule = aws_cloudwatch_event_rule.rate_1_minute.name
 }
