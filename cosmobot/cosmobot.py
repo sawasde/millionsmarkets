@@ -128,12 +128,13 @@ def update_cosmo_parameters(symbol):
     utils.logger.info(f'parameters max: {maxima_mean} min {minima_mean}')
     # Put it on memory
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
+    item = json.loads(json.dumps(symbol_parameter_item), parse_float=Decimal)
 
     # Put it on dynamo
     dynamodb.put_item(  AWS_DYNAMO_SESSION,
                         TABLE_NAME,
                         {'feature' : f'{symbol}_parameters',
-                        'value' : symbol_parameter_item})
+                        'value' : item})
 
 
 @utils.logger.catch
