@@ -11,7 +11,7 @@ resource "aws_cloudwatch_event_rule" "rate_8_minutes" {
 }
 
 resource "aws_cloudwatch_event_target" "cosmoagent_trigger" {
-  target_id = var.COSMOBOT_DEBUG == "1" ? "cosmoagent_event_lambda_test" : "cosmoagent_event_lambda"
+  target_id = var.COSMOBOOT_STAGING == "1" ? "cosmoagent_event_lambda_qa" : "cosmoagent_event_lambda"
   arn = aws_lambda_function.cosmoagent_lambda.arn
   rule = aws_cloudwatch_event_rule.rate_1_minute.name
 }
@@ -25,7 +25,7 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent" {
 }
 
 resource "aws_cloudwatch_event_target" "cosmobot_trigger" {
-  target_id = var.COSMOBOT_DEBUG == "1" ? "cosmobot_event_lambda_test" : "cosmobot_event_lambda"
+  target_id = var.COSMOBOT_STAGING == "1" ? "cosmobot_event_lambda_qa" : "cosmobot_event_lambda"
   arn = aws_lambda_function.cosmobot_lambda.arn
   rule = aws_cloudwatch_event_rule.rate_8_minutes.name
 }

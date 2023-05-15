@@ -10,16 +10,20 @@ from utils import utils, dynamodb, cosmomixins
 
 
 #Staging
-DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Discord vars
-DISCORD_COSMOBOT_HOOK_URL = ''
-DISCORD_COSMOBOT_ROLE = ''
+DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL']
+DISCORD_COSMOBOT_ROLE = os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE']
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-TABLE_NAME = 'mm_cosmobot'
+
+if STAGING:
+    TABLE_NAME = 'mm_cosmobot_staging'
+else:
+    TABLE_NAME = 'mm_cosmobot'
 
 # General vars
 COSMOBOT_CONFIG = {}
@@ -38,7 +42,7 @@ def check_cosmo_call(symbol, mtrend):
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
     # filter mtrend
     trade = None
-
+    print(curr_area, limit_area)
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
         utils.logger.info(f'1st check passed curr_area: {curr_area} limit_area: {limit_area}')
@@ -93,14 +97,10 @@ def update_cosmo_parameters(symbol):
     global COSMO_SYMBOLS_PARAMETERS
     utils.logger.info('Update cosmo parameters')
 
-    if DEBUG:
-        symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                    TABLE_NAME,
-                                                    {'feature' : f'{symbol}_parameters_test'})
-    else:
-        symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                    TABLE_NAME,
-                                                    {'feature' : f'{symbol}_parameters'})
+
+    symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
+                                                TABLE_NAME,
+                                                {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
 
     # order n
@@ -129,16 +129,10 @@ def update_cosmo_parameters(symbol):
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
     # Put it on dynamo
-    if DEBUG:
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                    TABLE_NAME,
-                    {'feature' : f'{symbol}_parameters_test',
-                    'value' : symbol_parameter_item})
-    else:
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            TABLE_NAME,
-                            {'feature' : f'{symbol}_parameters',
-                            'value' : symbol_parameter_item})
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        TABLE_NAME,
+                        {'feature' : f'{symbol}_parameters',
+                        'value' : symbol_parameter_item})
 
 
 @utils.logger.catch
@@ -192,7 +186,7 @@ def run():
 
         cosmo_call = check_cosmo_call(symbol, mtrend)
 
-        if DEBUG:
+        if STAGING:
             cosmo_call = 'BUY'
 
         if cosmo_call:
@@ -212,7 +206,7 @@ def run():
             # Prepare message
             msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
 
-            if DEBUG:
+            if STAGING:
                 utils.logger.info(msg)
 
             utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
@@ -230,18 +224,16 @@ def run():
                         'pd_limit' : pd_limit }
 
             item = json.loads(json.dumps(to_put), parse_float=Decimal)
+            table = 'mm_cosmobot_calls'
 
-            if DEBUG:
-                dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                    'mm_cosmobot_calls_test',
-                                    item,
-                                    region='sa-east-1')
+            if STAGING:
+                table += '_staging'
 
-            else:
-                dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                    'mm_cosmobot_calls',
-                                    item,
-                                    region='sa-east-1')
+
+            dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                                table,
+                                item,
+                                region='sa-east-1')
 
 
 @utils.logger.catch
@@ -254,7 +246,8 @@ def launch(event=None, context=None):
     global DISCORD_COSMOBOT_ROLE
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME, DEBUG)
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
+                                                            TABLE_NAME)
 
     # Log path
     if not FROM_LAMBDA:
@@ -262,14 +255,6 @@ def launch(event=None, context=None):
 
     # Log discord
     utils.logger.info('Load Discord vars')
-
-    # Discord URL
-    if DEBUG:
-        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL_TEST']
-        DISCORD_COSMOBOT_ROLE= os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE_TEST']
-    else:
-        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL']
-        DISCORD_COSMOBOT_ROLE = os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE']
 
     # Run
     run()

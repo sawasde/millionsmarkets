@@ -11,7 +11,7 @@ from utils import utils, trends, bintrade, dynamodb
 from utils import cosmomixins
 
 # Staging
-DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Binance variables
@@ -22,7 +22,10 @@ ALL_CRYPTO_PRICE = []
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-TABLE_NAME = 'mm_cosmoagent'
+if STAGING:
+    TABLE_NAME = 'mm_cosmoagent_staging'
+else:
+    TABLE_NAME = 'mm_cosmoagent'
 
 
 @utils.logger.catch
@@ -45,17 +48,15 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
                 'pz_limit' : pz_limit }
 
     item = json.loads(json.dumps(to_put), parse_float=Decimal)
+    table = f'mm_cosmobot_historical_{symbol}'
 
-    if DEBUG:
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            f'mm_cosmobot_historical_{symbol}_test',
-                            item,
-                            region='sa-east-1')
-    else:
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            f'mm_cosmobot_historical_{symbol}',
-                            item,
-                            region='sa-east-1')
+    if STAGING:
+        table += '_staging'
+
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        table,
+                        item,
+                        region='sa-east-1')
 
 
 
@@ -94,8 +95,7 @@ def run():
 
 	# Load config in loop
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME,
-                                                            DEBUG)
+                                                            TABLE_NAME)
 
     # loop crypto
     for symbol in cosmoagent_config['crypto_symbols']:
@@ -118,8 +118,7 @@ def launch(event=None, context=None):
     print (utils.logger)
     # Load config
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME ,
-                                                            DEBUG)
+                                                            TABLE_NAME)
 
     # Log path
     if not FROM_LAMBDA:
@@ -129,7 +128,7 @@ def launch(event=None, context=None):
     utils.logger.info('AUTH BINANCE')
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
 
-    if DEBUG:
+    if STAGING:
         klines = bintrade.get_chart_data(BIN_CLIENT,
                                         'BTCUSDT',
                                         start='1 day ago',

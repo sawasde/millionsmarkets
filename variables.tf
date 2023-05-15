@@ -11,7 +11,7 @@ variable "BIN_API_SECRET" {
     type = string
 }
 
-variable "COSMOBOT_DEBUG" {
+variable "COSMOBOT_STAGING" {
     type = string
 }
 
@@ -27,8 +27,11 @@ variable "COSMOBOT_DISCORD_ROLE" {
     type = string
 }
 
-
 data "aws_iam_role" "mm_lambda_role" {
+  name = "lambda-mm-basic-role"
+}
+
+data "aws_iam_role" "mm_lambda_role_staging" {
   name = "lambda-mm-basic-role"
 }
 

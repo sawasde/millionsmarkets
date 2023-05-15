@@ -5,14 +5,21 @@ import os
 # local imports
 from utils import utils, dynamodb, cosmomixins, plotting
 
-# AWS Dynamo
-AWS_DYNAMO_SESSION = dynamodb.create_session()
 
 # General vars
 COSMOBOT_CONFIG = {}
 CHART_BASE_PATH = 'cosmoplotter/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 TMS_TRESSHOLD_SEC = 260
+
+# AWS Dynamo
+STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
+AWS_DYNAMO_SESSION = dynamodb.create_session()
+
+if STAGING:
+    TABLE_NAME = 'mm_cosmobot_staging'
+else:
+    TABLE_NAME = 'mm_cosmobot'
 
 
 
@@ -79,7 +86,7 @@ def launch():
     global COSMOBOT_CONFIG
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot')
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME)
 
     # Log config
     utils.logger.info(COSMOBOT_CONFIG)

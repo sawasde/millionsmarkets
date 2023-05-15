@@ -14,7 +14,7 @@ resource "terraform_data" "cosmoagent_lambda_zip" {
 resource "aws_lambda_function" "cosmoagent_lambda" {
 
   filename      = "cosmoagent.zip"
-  function_name = var.COSMOBOT_DEBUG == "1" ? "cosmoagent_lambda_test" : "cosmoagent_lambda"
+  function_name = var.COSMOBOT_STAGING == "1" ? "cosmoagent_lambda_qa" : "cosmoagent_lambda"
   role          = data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
@@ -24,7 +24,7 @@ resource "aws_lambda_function" "cosmoagent_lambda" {
     variables = {
       TF_VAR_BIN_API_KEY = var.BIN_API_KEY
       TF_VAR_BIN_API_SECRET = var.BIN_API_SECRET
-      TF_VAR_COSMOBOT_DEBUG = var.COSMOBOT_DEBUG
+      TF_VAR_COSMOBOT_STAGING = var.COSMOBOT_STAGING
       TF_VAR_COSMOBOT_FROM_LAMBDA = var.COSMOBOT_FROM_LAMBDA
     }
   }
@@ -48,7 +48,7 @@ resource "terraform_data" "cosmobot_lambda_zip" {
 resource "aws_lambda_function" "cosmobot_lambda" {
 
   filename      = "cosmobot.zip"
-  function_name = var.COSMOBOT_DEBUG == "1" ? "cosmobot_lambda_test" : "cosmobot_lambda"
+  function_name = var.COSMOBOT_STAGING == "1" ? "cosmobot_lambda_test" : "cosmobot_lambda"
   role          = data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
@@ -57,7 +57,7 @@ resource "aws_lambda_function" "cosmobot_lambda" {
 
   environment {
     variables = {
-      TF_VAR_COSMOBOT_DEBUG = var.COSMOBOT_DEBUG
+      TF_VAR_COSMOBOT_STAGING = var.COSMOBOT_STAGING
       TF_VAR_COSMOBOT_FROM_LAMBDA = var.COSMOBOT_FROM_LAMBDA
       TF_VAR_COSMOBOT_DISCORD_HOOK_URL = var.COSMOBOT_DISCORD_HOOK_URL
       TF_VAR_COSMOBOT_DISCORD_ROLE = var.COSMOBOT_DISCORD_ROLE
