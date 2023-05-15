@@ -106,6 +106,7 @@ def update_cosmo_parameters(symbol):
 
     # order n
     order_n = int(symbol_parameter_item['order_mtrend'])
+    print('HERE',symbol_parameter_item)
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
@@ -118,23 +119,22 @@ def update_cosmo_parameters(symbol):
     maxima_mean = mtrend_maxima.mean()
     minima_mean = mtrend_minima.mean()
 
-    symbol_parameter_item['bull_mtrend']= int(maxima_mean)
-    symbol_parameter_item['bear_mtrend'] = int(minima_mean)
+    symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:2f}')
+    symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:2f}')
 
     # Update Timestamp
-    symbol_parameter_item['timestamp'] = int(utils.get_timestamp(multiplier=1))
+    symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
 
     # Log parameters
     utils.logger.info(f'parameters max: {maxima_mean} min {minima_mean}')
     # Put it on memory
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
-    item = json.loads(json.dumps(symbol_parameter_item), parse_float=Decimal)
 
     # Put it on dynamo
     dynamodb.put_item(  AWS_DYNAMO_SESSION,
                         TABLE_NAME,
                         {'feature' : f'{symbol}_parameters',
-                        'value' : item})
+                        'value' : symbol_parameter_item})
 
 
 @utils.logger.catch
