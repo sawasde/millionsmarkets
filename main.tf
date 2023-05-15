@@ -14,7 +14,7 @@ resource "terraform_data" "cosmoagent_lambda_zip" {
 resource "aws_lambda_function" "cosmoagent_lambda" {
 
   filename      = "cosmoagent.zip"
-  function_name = var.COSMOBOT_STAGING == "1" ? "cosmoagent_lambda_qa" : "cosmoagent_lambda"
+  function_name = var.COSMOBOT_STAGING == "1" ? "cosmoagent_lambda_staging" : "cosmoagent_lambda"
   role          = data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
@@ -48,7 +48,7 @@ resource "terraform_data" "cosmobot_lambda_zip" {
 resource "aws_lambda_function" "cosmobot_lambda" {
 
   filename      = "cosmobot.zip"
-  function_name = var.COSMOBOT_STAGING == "1" ? "cosmobot_lambda_test" : "cosmobot_lambda"
+  function_name = var.COSMOBOT_STAGING == "1" ? "cosmobot_lambda_staging" : "cosmobot_lambda"
   role          = data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
