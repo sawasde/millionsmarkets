@@ -5,12 +5,11 @@ on:
     branches:
     - "**"
     - "!main"
+    - "!staging"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      DEBUG: ${{ vars.TF_VAR_COSMOBOT_DEBUG }}
     strategy:
       matrix:
         python-version: ["3.9"]

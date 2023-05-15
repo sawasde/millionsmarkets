@@ -1,23 +1,30 @@
 """ Cosmo BOT module to send CRYPTO signals calls"""
-# pylint: disable=no-name-in-module, import-error
+# pylint: disable=no-name-in-module, import-error, R0801
 
 import os
+import json
+from decimal import Decimal
 import numpy as np
+import pandas as pd
 #import discord
 from utils import utils, dynamodb, cosmomixins
 
 
 #Staging
-DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Discord vars
-DISCORD_COSMOBOT_HOOK_URL = ''
-DISCORD_COSMOBOT_ROLE = ''
+DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL']
+DISCORD_COSMOBOT_ROLE = os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE']
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-TABLE_NAME = 'mm_cosmobot'
+
+if STAGING:
+    TABLE_NAME = 'mm_cosmobot_staging'
+else:
+    TABLE_NAME = 'mm_cosmobot'
 
 # General vars
 COSMOBOT_CONFIG = {}
@@ -91,6 +98,7 @@ def update_cosmo_parameters(symbol):
     global COSMO_SYMBOLS_PARAMETERS
     utils.logger.info('Update cosmo parameters')
 
+
     symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
                                                 TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
@@ -104,8 +112,8 @@ def update_cosmo_parameters(symbol):
     mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
     mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
 
-    print('MAXI', mtrend_maxima)
-    print('MINI', mtrend_minima)
+    utils.logger.info(f'MAX Peaks {mtrend_maxima}')
+    utils.logger.info(f'MIN Peaks {mtrend_minima}')
 
     maxima_mean = mtrend_maxima.mean()
     minima_mean = mtrend_minima.mean()
@@ -139,10 +147,10 @@ def update_cosmo_dfs(symbol):
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
     if FROM_LAMBDA:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
-                                                           symbol, csv_path, 5, 521, False)
+                                                           symbol, csv_path, 5, 521, False, STAGING)
     else:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
-                                                           symbol, csv_path, 5, 521, True)
+                                                           symbol, csv_path, 5, 521, True, STAGING)
 
     symbol_df = cosmomixins.aux_format_plotter_df(symbol_df, 31)
 
@@ -158,6 +166,50 @@ def prepare_msg(call, symbol, mtrend, pclose, role):
     msg += f'**Price**: ${pclose:,}\n'
     msg += f'<@&{role}>'
     return msg
+
+
+@utils.logger.catch
+def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+    """ Check last calls and compare to the current call to filter it """
+
+    utils.logger.info(f'{symbol} Checking last calls')
+    table_name = 'mm_cosmobot_calls'
+    week = cosmo_time[0]
+    timestamp = utils.date_ago_timestmp(days=1)
+
+    if STAGING:
+        table_name += '_staging'
+
+    info = dynamodb.query_items(dyn_session=AWS_DYNAMO_SESSION,
+                                table_name=table_name,
+                                pkey='week',
+                                pvalue=week,
+                                query_type='both',
+                                skey='timestamp',
+                                svalue=timestamp,
+                                scond='gte',
+                                region='sa-east-1')
+
+    if len(info) == 0:
+        return True
+
+    last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info))
+    mask = (last_call['symbol'] == symbol) & (last_call['cosmo_call'] == cosmo_call)
+    filter_call = last_call[mask]
+
+    if len(filter_call) == 0:
+        return True
+
+    lc_mtrend = filter_call['mtrend'].iloc[-1]
+
+    utils.logger.info(f'{symbol} mtrends last call: {lc_mtrend} current: {mtrend}')
+    new_mtrend = abs(lc_mtrend) * float(COSMOBOT_CONFIG['mtrend_factor'])
+    utils.logger.info(f'New mtrend {new_mtrend}')
+
+    if  abs(mtrend) > new_mtrend:
+        return False
+
+    return True
 
 
 @utils.logger.catch
@@ -178,36 +230,68 @@ def run():
         mtrend = symbol_cosmo_info['mtrend']
 
         cosmo_call = check_cosmo_call(symbol, mtrend)
-        if DEBUG:
-            cosmo_call = 'BUY'
 
         if cosmo_call:
-            utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
-        # Get Cosmo Variables
-            pclose = symbol_cosmo_info['pclose']
-            area = symbol_cosmo_info['area']
-            area = '{:.2e}'.format(area)
+            # Get Cosmo Time Variables
+            cosmo_time = cosmomixins.get_cosmobot_time()
 
-            # Prepare message
-            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
+            if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 
-            if DEBUG:
-                utils.logger.info(msg)
+                utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
+                # Get Cosmo Variables
+                pclose = symbol_cosmo_info['pclose']
+                ptrend = symbol_cosmo_info['ptrend']
+                strend = symbol_cosmo_info['strend']
+                pd_limit = symbol_cosmo_info['pd_limit']
+                pz_limit = symbol_cosmo_info['pz_limit']
+                area = symbol_cosmo_info['area']
+                area = '{:.2e}'.format(area)
 
-            utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
+
+
+                # Prepare message
+                msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
+
+                if STAGING:
+                    utils.logger.info(msg)
+
+                utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
+
+                to_put = {  'week' : cosmo_time[0],
+                            'timestamp' : cosmo_time[4],
+                            'cosmo_call' : cosmo_call,
+                            'symbol' : symbol,
+                            'mtrend' : mtrend,
+                            'area'   : area,
+                            'strend' : strend,
+                            'ptrend' : ptrend,
+                            'pclose' : pclose,
+                            'pz_limit' : pz_limit,
+                            'pd_limit' : pd_limit }
+
+                item = json.loads(json.dumps(to_put), parse_float=Decimal)
+                table_name = 'mm_cosmobot_calls'
+
+                if STAGING:
+                    table_name += '_staging'
+
+
+                dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                                    table_name,
+                                    item,
+                                    region='sa-east-1')
 
 
 @utils.logger.catch
 def launch(event=None, context=None):
     """ Launch function """
-    # pylint: disable=unused-argument, disable=global-statement
+    # pylint: disable=unused-argument, global-statement
 
     global COSMOBOT_CONFIG
-    global DISCORD_COSMOBOT_HOOK_URL
-    global DISCORD_COSMOBOT_ROLE
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME, DEBUG)
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
+                                                            TABLE_NAME)
 
     # Log path
     if not FROM_LAMBDA:
@@ -215,14 +299,6 @@ def launch(event=None, context=None):
 
     # Log discord
     utils.logger.info('Load Discord vars')
-
-    # Discord URL
-    if DEBUG:
-        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL_TEST']
-        DISCORD_COSMOBOT_ROLE= os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE_TEST']
-    else:
-        DISCORD_COSMOBOT_HOOK_URL = os.environ['TF_VAR_COSMOBOT_DISCORD_HOOK_URL']
-        DISCORD_COSMOBOT_ROLE = os.environ['TF_VAR_COSMOBOT_DISCORD_ROLE']
 
     # Run
     run()

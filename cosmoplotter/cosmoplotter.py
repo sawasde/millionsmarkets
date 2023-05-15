@@ -5,14 +5,21 @@ import os
 # local imports
 from utils import utils, dynamodb, cosmomixins, plotting
 
-# AWS Dynamo
-AWS_DYNAMO_SESSION = dynamodb.create_session()
 
 # General vars
 COSMOBOT_CONFIG = {}
 CHART_BASE_PATH = 'cosmoplotter/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 TMS_TRESSHOLD_SEC = 260
+
+# AWS Dynamo
+STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
+AWS_DYNAMO_SESSION = dynamodb.create_session()
+
+if STAGING:
+    TABLE_NAME = 'mm_cosmobot_staging'
+else:
+    TABLE_NAME = 'mm_cosmobot'
 
 
 
@@ -64,8 +71,13 @@ def run(days_ago):
             # Check DFs
             utils.logger.info('Checking DFs')
             csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
-            df_result = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION, symbol,
-                                                            csv_path, weeks, 521)
+            df_result = cosmomixins.get_resource_optimized_dfs( AWS_DYNAMO_SESSION,
+                                                                symbol,
+                                                                csv_path,
+                                                                weeks,
+                                                                521,
+                                                                True,
+                                                                STAGING)
 
             # Plot
             utils.logger.info('Plotting ...')
@@ -79,7 +91,7 @@ def launch():
     global COSMOBOT_CONFIG
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, 'mm_cosmobot')
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME)
 
     # Log config
     utils.logger.info(COSMOBOT_CONFIG)
