@@ -118,7 +118,7 @@ def aux_format_plotter_df(df_initial, day=31, yaxis='ptrend'):
     if len(df_initial) < 2:
         return df_initial
 
-    day_tms = utils.date_ago_timestmp(xtb_tms=False, days=int(day))
+    day_tms = utils.date_ago_timestmp(days=int(day))
     df_result = df_initial[df_initial['timestamp'] >= day_tms]
 
     # AREA STUFF

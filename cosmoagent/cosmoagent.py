@@ -48,13 +48,13 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
                 'pz_limit' : pz_limit }
 
     item = json.loads(json.dumps(to_put), parse_float=Decimal)
-    table = f'mm_cosmobot_historical_{symbol}'
+    table_name = f'mm_cosmobot_historical_{symbol}'
 
     if STAGING:
-        table += '_staging'
+        table_name += '_staging'
 
     dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        table,
+                        table_name,
                         item,
                         region='sa-east-1')
 
@@ -115,7 +115,6 @@ def launch(event=None, context=None):
 
     global BIN_CLIENT
 
-    print (utils.logger)
     # Load config
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
                                                             TABLE_NAME)

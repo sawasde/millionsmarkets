@@ -57,25 +57,19 @@ def text_to_printable(text):
 
 
 @logger.catch
-def date_ago_timestmp(xtb_tms=True, **kwargs):
+def date_ago_timestmp(**kwargs):
     """ Take time in hours, days, weeks, months ago and return the timestamp in ms """
 
     now = dt.datetime.now(pytz.timezone('America/Bogota'))
     date = now - dt.timedelta(**kwargs)
     result = int(dt.datetime.timestamp(date))
 
-    if xtb_tms:
-        result = result * 1000
-
     return result
 
 
 @logger.catch
-def date_oper_timestamp_and_date(tms, xtb_tms=True, oper='+', **kwargs):
+def date_oper_timestamp_and_date(tms, oper='+', **kwargs):
     """ Add to timestamp a date """
-
-    if xtb_tms:
-        tms = int(tms / 1000)
 
     date = timestamp_to_date(tms)
 
@@ -85,9 +79,6 @@ def date_oper_timestamp_and_date(tms, xtb_tms=True, oper='+', **kwargs):
         result = date + dt.timedelta(**kwargs)
 
     result = int(dt.datetime.timestamp(result))
-
-    if xtb_tms:
-        result = result * 1000
 
     return result
 
