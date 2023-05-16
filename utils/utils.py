@@ -150,9 +150,9 @@ def integrate_area_below(df_inital='', yaxis='', dx_portion=1.0):
 
 @logger.catch
 def discord_webhhok_send(url, username, content, embed=False, attemps=5):
-    ''' send messages using Discord webhook
+    """ send messages using Discord webhook
             embed = {"description": "desc", "title": "embed title"}
-    '''
+    """
     while attemps > 0:
         data = {
             'content': content,
@@ -172,3 +172,11 @@ def discord_webhhok_send(url, username, content, embed=False, attemps=5):
             break
         attemps -= 1
     return result
+
+
+@logger.catch
+def divide_list_chunks(lis, chunks):
+    """ divide a list into chunks """
+
+    for i in range(0, len(lis), chunks):
+        yield lis[i:i + chunks]

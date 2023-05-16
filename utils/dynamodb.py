@@ -10,7 +10,7 @@ from utils import utils
 def load_feature_value_config(dyn_session, table):
     """ Load feature(key) value(value) config table """
 
-    utils.logger.info(f'Load Config dict for {table}')
+    utils.logger.info(f'Load Config for {table}')
     return get_item(dyn_session, table, {'feature' : 'config'})
 
 

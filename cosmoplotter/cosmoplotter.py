@@ -2,6 +2,7 @@
 # pylint: disable=no-name-in-module, import-error
 
 import os
+import threading
 # local imports
 from utils import utils, dynamodb, cosmomixins, plotting
 
@@ -27,7 +28,7 @@ else:
 def plotter(symbol, df_initial, day):
     """ Main Function to plot symbol cosmo data """
 
-    df_result = cosmomixins.aux_format_plotter_df(df_initial, day)
+    df_result = cosmomixins.aux_format_plotter_df(symbol, df_initial, day)
 
     png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
 
@@ -41,7 +42,7 @@ def plotter(symbol, df_initial, day):
 
 
 @utils.logger.catch
-def remove_all_plots():
+def remove_plot(symbol):
     """ Remove all local pictures """
     # pylint: disable=unused-variable
 
@@ -49,39 +50,37 @@ def remove_all_plots():
         for basename in files:
             filename = os.path.join(root, basename)
 
-            if filename.endswith('.png'):
+            if symbol in filename and filename.endswith('.png'):
                 os.remove(filename)
 
 
 @utils.logger.catch
-def run(days_ago):
+def run(symbol, days_ago):
     """ Main function """
 
     # Remove previous plots
-    utils.logger.info('Removing plots ...')
-    remove_all_plots()
+    utils.logger.info(f'{symbol} Removing plots ...')
+    remove_plot(symbol)
 
-    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+    for day in days_ago:
+        # Get df
+        weeks = 1 + (day // 7)
+        utils.logger.info(f'{symbol} days: {day} weeks: {weeks}')
 
-        for day in days_ago:
-            # Get df
-            weeks = 1 + (day // 7)
-            utils.logger.info(f'Get info for {symbol} days: {day} weeks: {weeks}')
+        # Check DFs
+        utils.logger.info(f'{symbol} Checking DFs')
+        csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
+        df_result = cosmomixins.get_resource_optimized_dfs( AWS_DYNAMO_SESSION,
+                                                            symbol,
+                                                            csv_path,
+                                                            weeks,
+                                                            521,
+                                                            True,
+                                                            STAGING)
 
-            # Check DFs
-            utils.logger.info('Checking DFs')
-            csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
-            df_result = cosmomixins.get_resource_optimized_dfs( AWS_DYNAMO_SESSION,
-                                                                symbol,
-                                                                csv_path,
-                                                                weeks,
-                                                                521,
-                                                                True,
-                                                                STAGING)
-
-            # Plot
-            utils.logger.info('Plotting ...')
-            plotter(symbol, df_result, day)
+        # Plot
+        utils.logger.info(f'{symbol} Plotting ...')
+        plotter(symbol, df_result, day)
 
 
 @utils.logger.catch
@@ -96,4 +95,13 @@ def launch():
     # Log config
     utils.logger.info(COSMOBOT_CONFIG)
 
-    run(days_ago=[31, 13])
+    # Start bot run() with threads
+    threads = []
+
+    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+        runner = threading.Thread(target=run, args=(symbol,[31, 13],))
+        threads.append(runner)
+        runner.start()
+
+    for thread in threads:
+        thread.join()
