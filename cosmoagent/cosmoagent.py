@@ -3,6 +3,7 @@
 
 import os
 import json
+import time
 import threading
 from decimal import Decimal
 from binance.client import Client
@@ -10,6 +11,7 @@ from binance.client import Client
 # local imports
 from utils import utils, trends, bintrade, dynamodb
 from utils import cosmomixins
+
 
 # Staging
 STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
@@ -123,23 +125,19 @@ def launch(event=None, context=None):
     utils.logger.info('AUTH BINANCE')
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
 
-    if STAGING:
-        klines = bintrade.get_chart_data(BIN_CLIENT,
-                                        'BTCUSDT',
-                                        start='1 day ago',
-                                        end='now',
-                                        period=BIN_CLIENT.KLINE_INTERVAL_1DAY,
-                                        is_df=True,
-                                        decimal=True)
-        utils.logger.info(klines)
-
     # Start bot run() with threads
     threads = []
 
-    for symbol in cosmoagent_config['crypto_symbols']:
-        runner = threading.Thread(target=run, args=(symbol,))
-        threads.append(runner)
-        runner.start()
+    # Use threading but be careful to not impact binance rate limit: max 20 req/s
+    symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 20)
 
-    for thread in threads:
-        thread.join()
+    for chunk in symbols_chunks:
+        for symbol in chunk:
+            runner = threading.Thread(target=run, args=(symbol,))
+            threads.append(runner)
+            runner.start()
+
+        for thread in threads:
+            thread.join()
+
+        time.sleep(1)

@@ -3,6 +3,7 @@
 
 import os
 import json
+import threading
 from decimal import Decimal
 import numpy as np
 import pandas as pd
@@ -96,13 +97,14 @@ def update_cosmo_parameters(symbol):
     # pylint: disable=global-variable-not-assigned
 
     global COSMO_SYMBOLS_PARAMETERS
-    utils.logger.info('Update cosmo parameters')
+    utils.logger.info(f' {symbol} Update cosmo parameters')
 
 
     symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
                                                 TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
+    COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
     # order n
     order_n = int(symbol_parameter_item['order_mtrend'])
@@ -112,28 +114,30 @@ def update_cosmo_parameters(symbol):
     mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
     mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
 
-    utils.logger.info(f'MAX Peaks {mtrend_maxima}')
-    utils.logger.info(f'MIN Peaks {mtrend_minima}')
+    utils.logger.info(f'{symbol} MAX Peaks {mtrend_maxima}')
+    utils.logger.info(f'{symbol} MIN Peaks {mtrend_minima}')
 
-    maxima_mean = mtrend_maxima.mean()
-    minima_mean = mtrend_minima.mean()
+    if (len(mtrend_maxima) > 0 ) and (len(mtrend_minima) > 0):
 
-    symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
-    symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
+        maxima_mean = mtrend_maxima.mean()
+        minima_mean = mtrend_minima.mean()
 
-    # Update Timestamp
-    symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
+        symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
+        symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
 
-    # Log parameters
-    utils.logger.info(f'parameters max: {maxima_mean} min {minima_mean}')
-    # Put it on memory
-    COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
+        # Update Timestamp
+        symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
 
-    # Put it on dynamo
-    dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        TABLE_NAME,
-                        {'feature' : f'{symbol}_parameters',
-                        'value' : symbol_parameter_item})
+        # Log parameters
+        utils.logger.info(f'{symbol} parameters max: {maxima_mean} min {minima_mean}')
+        # Put it on memory
+        COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
+
+        # Put it on dynamo
+        dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                            TABLE_NAME,
+                            {'feature' : f'{symbol}_parameters',
+                            'value' : symbol_parameter_item})
 
 
 @utils.logger.catch
@@ -142,7 +146,7 @@ def update_cosmo_dfs(symbol):
     # pylint: disable=global-variable-not-assigned
 
     global COSMO_SYMBOLS_DFS
-    utils.logger.info('Update cosmo DFs')
+    utils.logger.info(f'{symbol} Update cosmo DFs')
 
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
     if FROM_LAMBDA:
@@ -152,7 +156,7 @@ def update_cosmo_dfs(symbol):
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
                                                            symbol, csv_path, 5, 521, True, STAGING)
 
-    symbol_df = cosmomixins.aux_format_plotter_df(symbol_df, 31)
+    symbol_df = cosmomixins.aux_format_plotter_df(symbol, symbol_df, 31)
 
     COSMO_SYMBOLS_DFS[symbol] = symbol_df
 
@@ -213,73 +217,71 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 
 
 @utils.logger.catch
-def run():
+def run(symbol):
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
 
     global COSMOBOT_CONFIG
 
-    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+    # Update Stuff
+    update_cosmo_dfs(symbol)
+    update_cosmo_parameters(symbol)
 
-        # Update Stuff
-        update_cosmo_dfs(symbol)
-        update_cosmo_parameters(symbol)
+    # check for a trading call
+    symbol_cosmo_info = COSMO_SYMBOLS_DFS[symbol].iloc[-1]
+    mtrend = symbol_cosmo_info['mtrend']
 
-        # check for a trading call
-        symbol_cosmo_info = COSMO_SYMBOLS_DFS[symbol].iloc[-1]
-        mtrend = symbol_cosmo_info['mtrend']
+    cosmo_call = check_cosmo_call(symbol, mtrend)
 
-        cosmo_call = check_cosmo_call(symbol, mtrend)
+    if cosmo_call:
+        # Get Cosmo Time Variables
+        cosmo_time = cosmomixins.get_cosmobot_time()
 
-        if cosmo_call:
-            # Get Cosmo Time Variables
-            cosmo_time = cosmomixins.get_cosmobot_time()
+        if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 
-            if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
-
-                utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
-                # Get Cosmo Variables
-                pclose = symbol_cosmo_info['pclose']
-                ptrend = symbol_cosmo_info['ptrend']
-                strend = symbol_cosmo_info['strend']
-                pd_limit = symbol_cosmo_info['pd_limit']
-                pz_limit = symbol_cosmo_info['pz_limit']
-                area = symbol_cosmo_info['area']
-                area = '{:.2e}'.format(area)
+            utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
+            # Get Cosmo Variables
+            pclose = symbol_cosmo_info['pclose']
+            ptrend = symbol_cosmo_info['ptrend']
+            strend = symbol_cosmo_info['strend']
+            pd_limit = symbol_cosmo_info['pd_limit']
+            pz_limit = symbol_cosmo_info['pz_limit']
+            area = symbol_cosmo_info['area']
+            area = '{:.2e}'.format(area)
 
 
 
-                # Prepare message
-                msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
+            # Prepare message
+            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
 
-                if STAGING:
-                    utils.logger.info(msg)
+            if STAGING:
+                utils.logger.info(msg)
 
-                utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
+            utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
-                to_put = {  'week' : cosmo_time[0],
-                            'timestamp' : cosmo_time[4],
-                            'cosmo_call' : cosmo_call,
-                            'symbol' : symbol,
-                            'mtrend' : mtrend,
-                            'area'   : area,
-                            'strend' : strend,
-                            'ptrend' : ptrend,
-                            'pclose' : pclose,
-                            'pz_limit' : pz_limit,
-                            'pd_limit' : pd_limit }
+            to_put = {  'week' : cosmo_time[0],
+                        'timestamp' : cosmo_time[4],
+                        'cosmo_call' : cosmo_call,
+                        'symbol' : symbol,
+                        'mtrend' : mtrend,
+                        'area'   : area,
+                        'strend' : strend,
+                        'ptrend' : ptrend,
+                        'pclose' : pclose,
+                        'pz_limit' : pz_limit,
+                        'pd_limit' : pd_limit }
 
-                item = json.loads(json.dumps(to_put), parse_float=Decimal)
-                table_name = 'mm_cosmobot_calls'
+            item = json.loads(json.dumps(to_put), parse_float=Decimal)
+            table_name = 'mm_cosmobot_calls'
 
-                if STAGING:
-                    table_name += '_staging'
+            if STAGING:
+                table_name += '_staging'
 
 
-                dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                    table_name,
-                                    item,
-                                    region='sa-east-1')
+            dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                                table_name,
+                                item,
+                                region='sa-east-1')
 
 
 @utils.logger.catch
@@ -300,5 +302,13 @@ def launch(event=None, context=None):
     # Log discord
     utils.logger.info('Load Discord vars')
 
-    # Run
-    run()
+    # Start bot run() with threads
+    threads = []
+
+    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+        runner = threading.Thread(target=run, args=(symbol,))
+        threads.append(runner)
+        runner.start()
+
+    for thread in threads:
+        thread.join()
