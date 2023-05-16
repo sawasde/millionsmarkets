@@ -18,6 +18,7 @@ resource "aws_lambda_function" "cosmoagent_lambda" {
   role          = var.COSMOBOT_STAGING == "1" ? data.aws_iam_role.mm_lambda_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
+  memory_size   = 512
   timeout       = 60
 
   environment {
@@ -52,7 +53,7 @@ resource "aws_lambda_function" "cosmobot_lambda" {
   role          = var.COSMOBOT_STAGING == "1" ? data.aws_iam_role.mm_lambda_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
-  memory_size   = 1280
+  memory_size   = 1024
   timeout       = 200
 
   environment {

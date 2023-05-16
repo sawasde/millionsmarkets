@@ -106,7 +106,6 @@ def update_cosmo_parameters(symbol):
 
     # order n
     order_n = int(symbol_parameter_item['order_mtrend'])
-    print('HERE',symbol_parameter_item)
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
