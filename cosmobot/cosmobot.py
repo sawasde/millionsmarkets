@@ -106,7 +106,6 @@ def update_cosmo_parameters(symbol):
 
     # order n
     order_n = int(symbol_parameter_item['order_mtrend'])
-    print('HERE',symbol_parameter_item)
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
@@ -119,8 +118,8 @@ def update_cosmo_parameters(symbol):
     maxima_mean = mtrend_maxima.mean()
     minima_mean = mtrend_minima.mean()
 
-    symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:2f}')
-    symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:2f}')
+    symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
+    symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
 
     # Update Timestamp
     symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))

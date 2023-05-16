@@ -3,6 +3,7 @@
 
 import os
 import json
+import threading
 from decimal import Decimal
 from binance.client import Client
 
@@ -32,6 +33,8 @@ else:
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
     """ Put planet trend indicator in Dynamo table """
     # pylint: disable=too-many-arguments
+
+    utils.logger.info(f'Put Planet info for {symbol}')
 
     cosmo_time = cosmomixins.get_cosmobot_time()
     cosmo_week = cosmo_time[0]
@@ -63,7 +66,6 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 def get_planet_trend(symbol, bin_client=BIN_CLIENT):
     """ Get planet trend indicator data """
     # pylint: disable=broad-exception-caught
-
     utils.logger.info(f'Get Planet info for {symbol}')
 
     try:
@@ -90,22 +92,16 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
 
 
 @utils.logger.catch
-def run():
+def run(symbol):
     """ Run cosmoagent"""
 
-	# Load config in loop
-    cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME)
+    utils.logger.info(f'Run Cosmoagent for {symbol}')
 
-    # loop crypto
-    for symbol in cosmoagent_config['crypto_symbols']:
+    symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
 
-        symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
+    if symbol_cosmos_info[1]:
+        put_planet_trend_info(*symbol_cosmos_info)
 
-        if symbol_cosmos_info[1]:
-            put_planet_trend_info(*symbol_cosmos_info)
-        else:
-            continue
 
 
 @utils.logger.catch
@@ -137,5 +133,13 @@ def launch(event=None, context=None):
                                         decimal=True)
         utils.logger.info(klines)
 
-    # Start bot run()
-    run()
+    # Start bot run() with threads
+    threads = []
+
+    for symbol in cosmoagent_config['crypto_symbols']:
+        runner = threading.Thread(target=run, args=(symbol,))
+        threads.append(runner)
+        runner.start()
+
+    for thread in threads:
+        thread.join()
