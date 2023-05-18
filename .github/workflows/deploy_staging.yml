@@ -68,5 +68,5 @@ jobs:
       run: echo "This is 'staging' branch"
 
     - name: Is staging?
-      if: ${{ github.head_ref == 'staging' }}
-      run: echo "This is 'last staging debug' branch"
+      if: ${{ github.head_ref == 'dev' }}
+      run: echo "This is 'from dev' branch"
