@@ -39,11 +39,11 @@ jobs:
       run: terraform validate
 
     - name: Terraform import cosmoagent lambda function
-      run: terraform import --input=false aws_lambda_function.cosmoagent_lambda cosmoagent_lambda_staging
+      run: terraform import --input=false aws_lambda_function.cosmoagent_crypto_lambda cosmoagent_crypto_lambda_staging
       continue-on-error: true
 
     - name: Terraform import cosmoagent lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_lambda_staging/event_bridge_trigger_cosmoagent
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_crypto_lambda_staging/event_bridge_trigger_cosmoagent
       continue-on-error: true
 
     - name: Terraform import cosmobot lambda function

@@ -11,10 +11,10 @@ resource "terraform_data" "cosmoagent_lambda_zip" {
   }
 }
 
-resource "aws_lambda_function" "cosmoagent_lambda" {
+resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
 
   filename      = "cosmoagent.zip"
-  function_name = var.COSMOBOT_STAGING == "1" ? "cosmoagent_lambda_staging" : "cosmoagent_lambda"
+  function_name = var.COSMOBOT_STAGING == "1" ? "cosmoagent_crypto_lambda_staging" : "cosmoagent_crypto_lambda"
   role          = var.COSMOBOT_STAGING == "1" ? data.aws_iam_role.mm_lambda_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
@@ -27,12 +27,13 @@ resource "aws_lambda_function" "cosmoagent_lambda" {
       TF_VAR_BIN_API_SECRET = var.BIN_API_SECRET
       TF_VAR_COSMOBOT_STAGING = var.COSMOBOT_STAGING
       TF_VAR_COSMOBOT_FROM_LAMBDA = var.COSMOBOT_FROM_LAMBDA
+      TF_VAR_SYMBOL_TYPE = "CRYPTO"
     }
   }
 
   layers = [ data.aws_lambda_layer_version.binance_layer.arn,
-            data.aws_lambda_layer_version.loguru_layer.arn,
-            "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
+             data.aws_lambda_layer_version.loguru_layer.arn,
+             "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
 
   depends_on = [ terraform_data.cosmoagent_lambda_zip ]
 }
