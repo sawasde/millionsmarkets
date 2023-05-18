@@ -1,7 +1,7 @@
 name: deploy-staging
 
 on:
-  pull_request:
+  push:
     branches:
     - staging
 
