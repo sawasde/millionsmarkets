@@ -29,3 +29,7 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
+
+    - name: Debug branch
+      run: |
+        echo "Hello world from $GITHUB_BASE_REF! and $GITHUB_HEAD_REF! and ${{ github.head_ref  }}"
