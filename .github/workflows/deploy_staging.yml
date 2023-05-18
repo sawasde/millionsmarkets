@@ -1,4 +1,4 @@
-name: deploy-staging
+name: Deploy Staging
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     - staging
 
 jobs:
-  deploy:
+  deploy_staging:
     runs-on: ubuntu-latest
     environment: staging
 
