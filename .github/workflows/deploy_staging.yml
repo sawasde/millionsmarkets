@@ -56,3 +56,7 @@ jobs:
 
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
+
+    - name: Debug branch
+      run: |
+        echo "Hello world from $GITHUB_BASE_REF! and $GITHUB_HEAD_REF! and ${{ ${{ github.head_ref  }}"
