@@ -29,17 +29,3 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
-
-    - name: Output the branch name
-      run: echo $(echo $GITHUB_REF | cut -d'/' -f 3)
-
-    - name: Set env.BRANCH
-      run: echo "BRANCH=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_ENV
-
-    - name: Is staging?
-      if: env.BRANCH == 'staging'
-      run: echo "This is 'staging' branch"
-
-    - name: Is staging?
-      if: ${{ github.head_ref == 'staging' }}
-      run: echo "This is 'last staging debug' branch"

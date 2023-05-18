@@ -1,4 +1,4 @@
-name: deploy-staging
+name: Deploy Staging
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     - staging
 
 jobs:
-  deploy:
+  deploy_staging:
     runs-on: ubuntu-latest
     environment: staging
 
@@ -54,19 +54,9 @@ jobs:
       run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmobot cosmobot_lambda_staging/event_bridge_trigger_cosmobot
       continue-on-error: true
 
+    - name: this is
+      run: echo "This is ${{ github.head_ref }}"
+
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
 
-    - name: Output the branch name
-      run: echo $(echo $GITHUB_REF | cut -d'/' -f 3)
-
-    - name: Set env.BRANCH
-      run: echo "BRANCH=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_ENV
-
-    - name: Is staging?
-      if: env.BRANCH == 'staging'
-      run: echo "This is 'staging' branch"
-
-    - name: Is staging?
-      if: ${{ github.head_ref == 'staging' }}
-      run: echo "This is 'last staging debug' branch"
