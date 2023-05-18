@@ -1,5 +1,5 @@
 """ Utils module containing helper functions """
-# pylint: disable=import-error
+# pylint: disable=no-name-in-module
 
 from utils import utils
 
