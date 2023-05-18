@@ -56,7 +56,7 @@ def planets_volume(df_inital, return_decimal=5, trend_type='pure'):
     else:
         dir_limit = df_res['open'].iloc[-1] + ch_dir_corpus
 
-    return     utils.round_float_num(trend, return_decimal), \
+    return  utils.round_float_num(trend, return_decimal), \
             utils.round_float_num(df_res['close'].iloc[-1], return_decimal), \
             utils.round_float_num(dir_limit, return_decimal), \
             utils.round_float_num(zero_limit, return_decimal)
