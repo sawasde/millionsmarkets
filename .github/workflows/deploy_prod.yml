@@ -1,7 +1,7 @@
 name: deploy-prod
 
 on:
-  push:
+  pull_request:
     branches:
     - main
 
