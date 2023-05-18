@@ -129,7 +129,7 @@ def launch(event=None, context=None):
     threads = []
 
     # Use threading but be careful to not impact binance rate limit: max 20 req/s
-    symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 20)
+    symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 10)
 
     for chunk in symbols_chunks:
         for symbol in chunk:
@@ -140,4 +140,4 @@ def launch(event=None, context=None):
         for thread in threads:
             thread.join()
 
-        time.sleep(1)
+        time.sleep(2)
