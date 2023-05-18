@@ -1,4 +1,4 @@
-name: DEploy Prod
+name: Deploy Prod
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 jobs:
   deploy_prod:
-    if: ${{ github.head_ref == 'staging' }}
     runs-on: ubuntu-latest
     environment: prod
 

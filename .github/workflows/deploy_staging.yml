@@ -54,9 +54,5 @@ jobs:
       run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmobot cosmobot_lambda_staging/event_bridge_trigger_cosmobot
       continue-on-error: true
 
-    - name: this is
-      run: echo "This is ${{ github.head_ref }}"
-
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
-
