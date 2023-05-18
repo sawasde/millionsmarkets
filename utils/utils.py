@@ -57,25 +57,19 @@ def text_to_printable(text):
 
 
 @logger.catch
-def date_ago_timestmp(xtb_tms=True, **kwargs):
+def date_ago_timestmp(**kwargs):
     """ Take time in hours, days, weeks, months ago and return the timestamp in ms """
 
     now = dt.datetime.now(pytz.timezone('America/Bogota'))
     date = now - dt.timedelta(**kwargs)
     result = int(dt.datetime.timestamp(date))
 
-    if xtb_tms:
-        result = result * 1000
-
     return result
 
 
 @logger.catch
-def date_oper_timestamp_and_date(tms, xtb_tms=True, oper='+', **kwargs):
+def date_oper_timestamp_and_date(tms, oper='+', **kwargs):
     """ Add to timestamp a date """
-
-    if xtb_tms:
-        tms = int(tms / 1000)
 
     date = timestamp_to_date(tms)
 
@@ -85,9 +79,6 @@ def date_oper_timestamp_and_date(tms, xtb_tms=True, oper='+', **kwargs):
         result = date + dt.timedelta(**kwargs)
 
     result = int(dt.datetime.timestamp(result))
-
-    if xtb_tms:
-        result = result * 1000
 
     return result
 
@@ -159,9 +150,9 @@ def integrate_area_below(df_inital='', yaxis='', dx_portion=1.0):
 
 @logger.catch
 def discord_webhhok_send(url, username, content, embed=False, attemps=5):
-    ''' send messages using Discord webhook
+    """ send messages using Discord webhook
             embed = {"description": "desc", "title": "embed title"}
-    '''
+    """
     while attemps > 0:
         data = {
             'content': content,
@@ -181,3 +172,11 @@ def discord_webhhok_send(url, username, content, embed=False, attemps=5):
             break
         attemps -= 1
     return result
+
+
+@logger.catch
+def divide_list_chunks(lis, chunks):
+    """ divide a list into chunks """
+
+    for i in range(0, len(lis), chunks):
+        yield lis[i:i + chunks]

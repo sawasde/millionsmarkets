@@ -1,8 +1,10 @@
 """ Cosmoagent module for cryptocurrencies """
-# pylint: disable=no-name-in-module, import-error
+# pylint: disable=no-name-in-module, import-error, R0801
 
 import os
 import json
+import time
+import threading
 from decimal import Decimal
 from binance.client import Client
 
@@ -10,8 +12,9 @@ from binance.client import Client
 from utils import utils, trends, bintrade, dynamodb
 from utils import cosmomixins
 
+
 # Staging
-DEBUG = bool(int(os.getenv('TF_VAR_COSMOBOT_DEBUG')))
+STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
 
 # Binance variables
@@ -22,13 +25,18 @@ ALL_CRYPTO_PRICE = []
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-TABLE_NAME = 'mm_cosmoagent'
+if STAGING:
+    TABLE_NAME = 'mm_cosmoagent_staging'
+else:
+    TABLE_NAME = 'mm_cosmoagent'
 
 
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
     """ Put planet trend indicator in Dynamo table """
     # pylint: disable=too-many-arguments
+
+    utils.logger.info(f'Put Planet info for {symbol}')
 
     cosmo_time = cosmomixins.get_cosmobot_time()
     cosmo_week = cosmo_time[0]
@@ -45,24 +53,21 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
                 'pz_limit' : pz_limit }
 
     item = json.loads(json.dumps(to_put), parse_float=Decimal)
+    table_name = f'mm_cosmobot_historical_{symbol}'
 
-    if DEBUG:
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            f'mm_cosmobot_historical_{symbol}_test',
-                            item,
-                            region='sa-east-1')
-    else:
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            f'mm_cosmobot_historical_{symbol}',
-                            item,
-                            region='sa-east-1')
+    if STAGING:
+        table_name += '_staging'
+
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        table_name,
+                        item,
+                        region='sa-east-1')
 
 
 
 def get_planet_trend(symbol, bin_client=BIN_CLIENT):
     """ Get planet trend indicator data """
     # pylint: disable=broad-exception-caught
-
     utils.logger.info(f'Get Planet info for {symbol}')
 
     try:
@@ -89,23 +94,16 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
 
 
 @utils.logger.catch
-def run():
+def run(symbol):
     """ Run cosmoagent"""
 
-	# Load config in loop
-    cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME,
-                                                            DEBUG)
+    utils.logger.info(f'Run Cosmoagent for {symbol}')
 
-    # loop crypto
-    for symbol in cosmoagent_config['crypto_symbols']:
+    symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
 
-        symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
+    if symbol_cosmos_info[1]:
+        put_planet_trend_info(*symbol_cosmos_info)
 
-        if symbol_cosmos_info[1]:
-            put_planet_trend_info(*symbol_cosmos_info)
-        else:
-            continue
 
 
 @utils.logger.catch
@@ -115,11 +113,9 @@ def launch(event=None, context=None):
 
     global BIN_CLIENT
 
-    print (utils.logger)
     # Load config
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME ,
-                                                            DEBUG)
+                                                            TABLE_NAME)
 
     # Log path
     if not FROM_LAMBDA:
@@ -129,15 +125,19 @@ def launch(event=None, context=None):
     utils.logger.info('AUTH BINANCE')
     BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
 
-    if DEBUG:
-        klines = bintrade.get_chart_data(BIN_CLIENT,
-                                        'BTCUSDT',
-                                        start='1 day ago',
-                                        end='now',
-                                        period=BIN_CLIENT.KLINE_INTERVAL_1DAY,
-                                        is_df=True,
-                                        decimal=True)
-        utils.logger.info(klines)
+    # Start bot run() with threads
+    threads = []
 
-    # Start bot run()
-    run()
+    # Use threading but be careful to not impact binance rate limit: max 20 req/s
+    symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 10)
+
+    for chunk in symbols_chunks:
+        for symbol in chunk:
+            runner = threading.Thread(target=run, args=(symbol,))
+            threads.append(runner)
+            runner.start()
+
+        for thread in threads:
+            thread.join()
+
+        time.sleep(2)
