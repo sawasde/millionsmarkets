@@ -18,7 +18,7 @@ STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
 
 # Cosmoagent vars
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
-SYMBOL_TYPE = bool(int(os.getenv('TF_VAR_SYMBOL_TYPE')))
+SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
 # Binance variables
 BIN_CLIENT = None
@@ -145,8 +145,8 @@ def launch(event=None, context=None):
     if SYMBOL_TYPE == 'CRYPTO':
         # Log into Binance
         utils.logger.info('AUTH BINANCE')
-        bin_api_key = os.environ['TF_VAR_BIN_API_KEY']
-        bin_api_secret = os.environ['TF_VAR_BIN_API_SECRET']
+        bin_api_key = os.getenv('TF_VAR_BIN_API_KEY')
+        bin_api_secret = os.getenv('TF_VAR_BIN_API_SECRET')
         BIN_CLIENT = Client(bin_api_key, bin_api_secret)
 
         # Use threading but be careful to not impact binance rate limit: max 20 req/s
