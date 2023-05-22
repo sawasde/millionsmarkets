@@ -21,29 +21,10 @@ def launch(event=None, context=None):
     # pylint: disable=unused-argument, global-statement
 
     utils.logger.info('Hello World!')
-    """ Launch function """
     # pylint: disable=unused-argument, global-statement
 
-    global COSMOBOT_CONFIG
+    #global COSMOBOT_CONFIG
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME)
-
-    # Log path
-    if not FROM_LAMBDA:
-        utils.logger_path(COSMOBOT_CONFIG['log_path'])
-
-    # Log discord
-    utils.logger.info('Load Discord vars')
-
-    # Start bot run() with threads
-    threads = []
-
-    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
-        runner = threading.Thread(target=run, args=(symbol,))
-        threads.append(runner)
-        runner.start()
-
-    for thread in threads:
-        thread.join()
+    #COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
+    #                                                        TABLE_NAME)
