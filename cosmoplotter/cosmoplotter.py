@@ -14,7 +14,7 @@ CSV_ASSET_PATH = '{}{}.csv'
 TMS_TRESSHOLD_SEC = 260
 
 # AWS Dynamo
-STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
+STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 AWS_DYNAMO_SESSION = dynamodb.create_session()
 
 if STAGING:

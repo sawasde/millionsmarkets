@@ -11,15 +11,19 @@ variable "BIN_API_SECRET" {
     type = string
 }
 
-variable "COSMOBOT_STAGING" {
+variable "STAGING" {
     type = string
 }
 
-variable "COSMOBOT_FROM_LAMBDA" {
+variable "FROM_LAMBDA" {
     type = string
 }
 
 variable "COSMOBOT_DISCORD_HOOK_URL" {
+    type = string
+}
+
+variable "MONITORING_DISCORD_HOOK_URL" {
     type = string
 }
 
