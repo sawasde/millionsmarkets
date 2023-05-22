@@ -18,20 +18,21 @@ CONFIG_TABLE_NAME = None
 
 # Monitoring VARS
 MONITORING_RESULTS = { 'cosmoagent' : {}, 'cosmobot' : {}}
-SYMBOLS_BASE_PATH = 'monitoring/assets'
+SYMBOLS_BASE_PATH = 'monitoring/assets/'
+CSV_ASSET_PATH = '{}{}.csv'
 
 
 @utils.logger.catch
 def monitor_cosmoagent(symbol):
     """ Search for a cosmoagent historical symbol and compare the timestamp
         Use 2 minutes diff"""
-
+    csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
     symbol_df = cosmomixins.get_resource_optimized_dfs(     AWS_DYNAMO_SESSION,
-                                                            symbol, SYMBOLS_BASE_PATH,
+                                                            symbol, csv_path,
                                                             1, 99, True, STAGING)
 
     now_tms = symbol_df['timestamp'].iloc[-1]
-    diff_tms = utils.date_ago_timestmp(minutes=2)
+    diff_tms = utils.date_ago_timestmp(minutes=4)
 
     if now_tms > diff_tms:
         return True
