@@ -43,7 +43,7 @@ jobs:
       continue-on-error: true
 
     - name: Terraform import cosmoagent lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_crypto_lambda_staging/event_bridge_trigger_cosmoagent
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent_crypto cosmoagent_crypto_lambda_staging/event_bridge_trigger_cosmoagent_crypto
       continue-on-error: true
 
     - name: Terraform import cosmobot lambda function

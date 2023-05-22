@@ -23,9 +23,9 @@ DISCORD_COSMOBOT_ROLE = os.getenv('TF_VAR_COSMOBOT_DISCORD_ROLE')
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 
 if STAGING:
-    TABLE_NAME = 'mm_cosmobot_staging'
+    CONFIG_TABLE_NAME = 'mm_cosmobot_staging'
 else:
-    TABLE_NAME = 'mm_cosmobot'
+    CONFIG_TABLE_NAME = 'mm_cosmobot'
 
 # General vars
 COSMOBOT_CONFIG = {}
@@ -101,7 +101,7 @@ def update_cosmo_parameters(symbol):
 
 
     symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                TABLE_NAME,
+                                                CONFIG_TABLE_NAME,
                                                 {'feature' : f'{symbol}_parameters'})
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
@@ -135,7 +135,7 @@ def update_cosmo_parameters(symbol):
 
         # Put it on dynamo
         dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            TABLE_NAME,
+                            CONFIG_TABLE_NAME,
                             {'feature' : f'{symbol}_parameters',
                             'value' : symbol_parameter_item})
 
@@ -293,7 +293,7 @@ def launch(event=None, context=None):
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME)
+                                                            CONFIG_TABLE_NAME)
 
     # Log path
     if not FROM_LAMBDA:
