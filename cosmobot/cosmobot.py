@@ -12,8 +12,8 @@ from utils import utils, dynamodb, cosmomixins
 
 
 #Staging
-STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
-FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
+STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
+FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 
 # Discord vars
 DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_HOOK_URL')

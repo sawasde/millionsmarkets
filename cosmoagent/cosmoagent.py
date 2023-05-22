@@ -14,10 +14,10 @@ from utils import cosmomixins
 
 
 # Staging
-STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
+STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 
 # Cosmoagent vars
-FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
+FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
 # Binance variables
