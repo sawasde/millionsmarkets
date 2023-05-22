@@ -52,7 +52,7 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmobot" {
 resource "aws_cloudwatch_event_target" "monitoring_trigger" {
   target_id = var.STAGING == "1" ? "monitoring_event_lambda_staging" : "monitoring_event_lambda"
   arn = aws_lambda_function.monitoring_lambda.arn
-  rule = aws_cloudwatch_event_rule.rate_8_minutes.name
+  rule = aws_cloudwatch_event_rule.rate_20_minutes.name
 }
 
 resource "aws_lambda_permission" "allow_eventbridge_monitoring" {
