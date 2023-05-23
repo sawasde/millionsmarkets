@@ -15,10 +15,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY : ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TF_VAR_BIN_API_KEY : ${{ secrets.TF_VAR_BIN_API_KEY }}
       TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
-      TF_VAR_COSMOBOT_STAGING : ${{ vars.TF_VAR_COSMOBOT_STAGING }}
-      TF_VAR_COSMOBOT_FROM_LAMBDA : ${{ vars.TF_VAR_COSMOBOT_FROM_LAMBDA }}
+      TF_VAR_STAGING : ${{ vars.TF_VAR_STAGING }}
+      TF_VAR_FROM_LAMBDA : ${{ vars.TF_VAR_FROM_LAMBDA }}
       TF_VAR_COSMOBOT_DISCORD_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_HOOK_URL }}
       TF_VAR_COSMOBOT_DISCORD_ROLE : ${{ vars.TF_VAR_COSMOBOT_DISCORD_ROLE }}
+      TF_VAR_MONITORING_DISCORD_HOOK_URL : ${{ secrets.TF_VAR_MONITORING_DISCORD_HOOK_URL }}
 
     steps:
     - uses: actions/checkout@v3
@@ -39,11 +40,11 @@ jobs:
       run: terraform validate
 
     - name: Terraform import cosmoagent lambda function
-      run: terraform import --input=false aws_lambda_function.cosmoagent_lambda cosmoagent_lambda
+      run: terraform import --input=false aws_lambda_function.cosmoagent_crypto_lambda cosmoagent_crypto_lambda
       continue-on-error: true
 
     - name: Terraform import cosmoagent lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent cosmoagent_lambda/event_bridge_trigger_cosmoagent
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent_crypto cosmoagent_crypto_lambda/event_bridge_trigger_cosmoagent_crypto
       continue-on-error: true
 
     - name: Terraform import cosmobot lambda function
@@ -52,6 +53,14 @@ jobs:
 
     - name: Terraform import cosmobot lambda trigger
       run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmobot cosmobot_lambda/event_bridge_trigger_cosmobot
+      continue-on-error: true
+
+    - name: Terraform import monitoring lambda function
+      run: terraform import --input=false aws_lambda_function.monitoring_lambda monitoring_lambda
+      continue-on-error: true
+
+    - name: Terraform import monitoring lambda trigger
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_monitoring monitoring_lambda/event_bridge_trigger_monitoring
       continue-on-error: true
 
     - name: Terraform apply

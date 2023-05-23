@@ -11,15 +11,19 @@ variable "BIN_API_SECRET" {
     type = string
 }
 
-variable "COSMOBOT_STAGING" {
+variable "STAGING" {
     type = string
 }
 
-variable "COSMOBOT_FROM_LAMBDA" {
+variable "FROM_LAMBDA" {
     type = string
 }
 
 variable "COSMOBOT_DISCORD_HOOK_URL" {
+    type = string
+}
+
+variable "MONITORING_DISCORD_HOOK_URL" {
     type = string
 }
 
@@ -31,7 +35,7 @@ data "aws_iam_role" "mm_lambda_role" {
   name = "mm_bots_role"
 }
 
-data "aws_iam_role" "mm_lambda_role_staging" {
+data "aws_iam_role" "mm_bots_role_staging" {
   name = "mm_bots_role_staging"
 }
 

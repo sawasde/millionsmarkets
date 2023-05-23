@@ -14,21 +14,22 @@ from utils import cosmomixins
 
 
 # Staging
-STAGING = bool(int(os.getenv('TF_VAR_COSMOBOT_STAGING')))
-FROM_LAMBDA = bool(int(os.getenv('TF_VAR_COSMOBOT_FROM_LAMBDA')))
+STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
+
+# Cosmoagent vars
+FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
+SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
 # Binance variables
-BIN_API_KEY = os.environ['TF_VAR_BIN_API_KEY']
-BIN_API_SECRET = os.environ['TF_VAR_BIN_API_SECRET']
 BIN_CLIENT = None
-ALL_CRYPTO_PRICE = []
+
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 if STAGING:
-    TABLE_NAME = 'mm_cosmoagent_staging'
+    CONFIG_TABLE_NAME = 'mm_cosmoagent_staging'
 else:
-    TABLE_NAME = 'mm_cosmoagent'
+    CONFIG_TABLE_NAME = 'mm_cosmoagent'
 
 
 @utils.logger.catch
@@ -65,7 +66,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
 
 
-def get_planet_trend(symbol, bin_client=BIN_CLIENT):
+def get_crypto_planet_trend(symbol, bin_client=BIN_CLIENT):
     """ Get planet trend indicator data """
     # pylint: disable=broad-exception-caught
     utils.logger.info(f'Get Planet info for {symbol}')
@@ -92,6 +93,19 @@ def get_planet_trend(symbol, bin_client=BIN_CLIENT):
         return (symbol, None, None, None, None, None, None)
 
 
+def get_stock_planet_trend(symbol):
+    """ Get planet trend indicator data """
+    # pylint: disable=broad-exception-caught
+    utils.logger.info(f'Get Planet info for {symbol}')
+
+    try:
+
+        return (symbol, None, None, None, None, None, None)
+
+    except Exception as exc:
+        utils.logger.error(exc)
+        return (symbol, None, None, None, None, None, None)
+
 
 @utils.logger.catch
 def run(symbol):
@@ -99,11 +113,15 @@ def run(symbol):
 
     utils.logger.info(f'Run Cosmoagent for {symbol}')
 
-    symbol_cosmos_info = get_planet_trend(symbol, BIN_CLIENT)
+    if SYMBOL_TYPE == 'CRYPTO':
+        symbol_cosmos_info = get_crypto_planet_trend(symbol, BIN_CLIENT)
+    elif SYMBOL_TYPE == 'STOCK':
+        symbol_cosmos_info = get_stock_planet_trend(symbol)
+    else:
+        symbol_cosmos_info = (None,)
 
     if symbol_cosmos_info[1]:
         put_planet_trend_info(*symbol_cosmos_info)
-
 
 
 @utils.logger.catch
@@ -115,21 +133,32 @@ def launch(event=None, context=None):
 
     # Load config
     cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            TABLE_NAME)
+                                                            CONFIG_TABLE_NAME)
 
     # Log path
     if not FROM_LAMBDA:
         utils.logger_path(cosmoagent_config['log_path'])
 
-    # Binance
-    utils.logger.info('AUTH BINANCE')
-    BIN_CLIENT = Client(BIN_API_KEY, BIN_API_SECRET)
-
     # Start bot run() with threads
     threads = []
 
-    # Use threading but be careful to not impact binance rate limit: max 20 req/s
-    symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 10)
+    if SYMBOL_TYPE == 'CRYPTO':
+        # Log into Binance
+        utils.logger.info('AUTH BINANCE')
+        bin_api_key = os.getenv('TF_VAR_BIN_API_KEY')
+        bin_api_secret = os.getenv('TF_VAR_BIN_API_SECRET')
+        BIN_CLIENT = Client(bin_api_key, bin_api_secret)
+
+        # Use threading but be careful to not impact binance rate limit: max 20 req/s
+        symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 10)
+
+    elif SYMBOL_TYPE == 'STOCK':
+        # Log into XXXXX
+        symbols_chunks = utils.divide_list_chunks(cosmoagent_config['stock_symbols'], 10)
+
+    else:
+        utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
+        symbols_chunks =[]
 
     for chunk in symbols_chunks:
         for symbol in chunk:
