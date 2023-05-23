@@ -27,9 +27,13 @@ def monitor_cosmoagent(symbol):
     """ Search for a cosmoagent historical symbol and compare the timestamp
         Use 2 minutes diff"""
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
-    symbol_df = cosmomixins.get_resource_optimized_dfs(     AWS_DYNAMO_SESSION,
-                                                            symbol, csv_path,
-                                                            1, 99, True, STAGING)
+
+    if FROM_LAMBDA:
+        symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
+                                                           symbol, csv_path, 1, 99, False, STAGING)
+    else:
+        symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
+                                                            symbol, csv_path, 1, 99, True, STAGING)
 
     now_tms = symbol_df['timestamp'].iloc[-1]
     diff_tms = utils.date_ago_timestmp(minutes=4)
@@ -38,6 +42,7 @@ def monitor_cosmoagent(symbol):
         return True
 
     return False
+
 
 @utils.logger.catch
 def monitor_cosmobot(symbol):
@@ -71,7 +76,7 @@ def send_monitoring_report(bot):
         msg += ':white_check_mark:' if status else ':x:'
         msg += '\n'
 
-    msg += '\n'
+    msg += '-' *15 + '\n'
     utils.discord_webhhok_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
 
 
