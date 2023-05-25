@@ -68,7 +68,7 @@ def send_monitoring_report(bot):
 
     utils.logger.info(f'{bot} Sending Report')
 
-    msg = f'**{bot.upper()} Report:\n**'
+    msg = f'**{bot.upper()} Status:\n**'
 
     for symbol, status in MONITORING_RESULTS[bot].items():
 
