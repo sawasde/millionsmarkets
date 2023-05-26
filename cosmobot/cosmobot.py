@@ -47,21 +47,20 @@ def check_cosmo_call(symbol, mtrend):
 
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
-        utils.logger.info(f'1st check passed curr_area: {curr_area} limit_area: {limit_area}')
+        utils.logger.info(f'{symbol} 1st check passed curr_area: {curr_area} limit_area: {limit_area}')
 
-        bull_limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
-        bear_limit_mtrend = int(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
+        bull_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
+        bear_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
 
         # 2nd check: mtrend limit reached BUY or SELL
         # BUY
-        if mtrend < (bear_limit_mtrend):
-            utils.logger.info(f'2nd check passed BUY mtrend: {mtrend}')
-            trade = 'BUY'
+        trade = 'BUY' if mtrend < (bear_limit_mtrend) else None
 
         # SELL
-        if mtrend > (bull_limit_mtrend):
-            utils.logger.info(f'2nd check passed SELL mtrend: {mtrend}')
-            trade = 'SELL'
+        trade = 'SELL' if mtrend > (bull_limit_mtrend) else None
+
+        if trade:
+            utils.logger.info(f'{symbol} 2nd check passed {trade} mtrend: {mtrend}')
 
     return trade
 
