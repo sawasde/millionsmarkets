@@ -47,7 +47,8 @@ def check_cosmo_call(symbol, mtrend):
 
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
-        utils.logger.info(f'{symbol} 1st check passed curr_area: {curr_area} limit_area: {limit_area}')
+        utils.logger.info(f'{symbol} 1st check passed \
+                            curr_area: {curr_area} limit_area: {limit_area}')
 
         bull_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
         bear_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
