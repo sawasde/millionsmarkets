@@ -211,9 +211,9 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
     utils.logger.info(f'New mtrend {new_mtrend}')
 
     if  abs(mtrend) > new_mtrend:
-        return False
+        return True
 
-    return True
+    return False
 
 
 @utils.logger.catch
