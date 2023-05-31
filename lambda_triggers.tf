@@ -8,7 +8,7 @@ resource "aws_cloudwatch_event_rule" "rate_1_minute" {
 resource "aws_cloudwatch_event_rule" "rate_2_minutes" {
   name = "lambda_event_rule_rate_2_min"
   description = "retry scheduled every 2 min"
-  schedule_expression = "rate(2 minute)"
+  schedule_expression = "rate(2 minutes)"
 }
 
 resource "aws_cloudwatch_event_rule" "rate_8_minutes" {
