@@ -104,6 +104,17 @@ def aux_format_dynamo_df(df_inital):
     df_result['timestamp'] = df_result['timestamp'].astype('int')
     df_result = df_result.sort_values('timestamp')
 
+    # Delete outliers in certain cols
+    outliers_cols = ['pclose']
+    for col in outliers_cols:
+        q_hi = df_result[col].quantile(0.999)
+        q_low = df_result[col].quantile(0.001)
+
+        # Update DF
+        df_result = df_result[(df_result[col] < q_hi) & \
+                            (df_result[col] > q_low)]
+
+
     return df_result
 
 
