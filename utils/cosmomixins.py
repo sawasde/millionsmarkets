@@ -89,7 +89,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None, stag
 
 
 @utils.logger.catch
-def aux_format_dynamo_df(df_inital):
+def aux_format_dynamo_df(df_inital, df_call=False):
     """ Establish a good format DataFrame """
 
     to_float_cols = ['ptrend', 'mtrend', 'strend', 'pclose', 'pd_limit', 'pz_limit']
@@ -105,14 +105,15 @@ def aux_format_dynamo_df(df_inital):
     df_result = df_result.sort_values('timestamp')
 
     # Delete outliers in certain cols
-    outliers_cols = ['pclose']
-    for col in outliers_cols:
-        q_hi = df_result[col].quantile(0.999)
-        q_low = df_result[col].quantile(0.001)
+    if not df_call:
+        outliers_cols = ['pclose']
+        for col in outliers_cols:
+            q_hi = df_result[col].quantile(0.999)
+            q_low = df_result[col].quantile(0.001)
 
-        # Update DF
-        df_result = df_result[(df_result[col] < q_hi) & \
-                            (df_result[col] > q_low)]
+            # Update DF
+            df_result = df_result[(df_result[col] < q_hi) & \
+                                (df_result[col] > q_low)]
 
 
     return df_result
