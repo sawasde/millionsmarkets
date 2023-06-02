@@ -37,12 +37,14 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
     """ Put planet trend indicator in Dynamo table """
     # pylint: disable=too-many-arguments
 
-    utils.logger.info(f'Put Planet info for {symbol}')
+    utils.logger.info(f'{symbol} Put Planet info')
 
     cosmo_time = cosmomixins.get_cosmobot_time()
     cosmo_week = cosmo_time[0]
     cosmo_timestamp = cosmo_time[4]
 
+    to_log = f'{symbol} pclose: {pclose} tms: {cosmo_timestamp} mtrend: {mtrend}'
+    utils.logger.info(to_log)
 
     to_put = {  'week' : cosmo_week,
                 'timestamp' : cosmo_timestamp,
@@ -69,7 +71,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 def get_crypto_planet_trend(symbol, bin_client=BIN_CLIENT):
     """ Get planet trend indicator data """
     # pylint: disable=broad-exception-caught
-    utils.logger.info(f'Get Planet info for {symbol}')
+    utils.logger.info(f'{symbol} Get Planet info')
 
     try:
 
