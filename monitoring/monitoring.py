@@ -36,7 +36,7 @@ def monitor_cosmoagent(symbol):
                                                             symbol, csv_path, 1, 99, True, STAGING)
 
     now_tms = symbol_df['timestamp'].iloc[-1]
-    diff_tms = utils.date_ago_timestmp(minutes=4)
+    diff_tms = utils.date_ago_timestmp(minutes=10)
 
     if now_tms > diff_tms:
         return True
