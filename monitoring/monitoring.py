@@ -25,7 +25,7 @@ CSV_ASSET_PATH = '{}{}.csv'
 @utils.logger.catch
 def monitor_cosmoagent(symbol):
     """ Search for a cosmoagent historical symbol and compare the timestamp
-        Use 2 minutes diff"""
+        Use X minutes diff"""
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
 
     if FROM_LAMBDA:
@@ -47,7 +47,7 @@ def monitor_cosmoagent(symbol):
 @utils.logger.catch
 def monitor_cosmobot(symbol):
     """ Search for a cosmobot symbol parameters and compare the timestamp
-        Use 10 minutes diff"""
+        Use X minutes diff"""
 
     symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
                                                 CONFIG_TABLE_NAME,
