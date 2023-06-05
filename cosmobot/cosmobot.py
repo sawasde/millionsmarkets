@@ -38,7 +38,7 @@ COSMO_SYMBOLS_DFS = {}
 @utils.logger.catch
 def check_cosmo_call(symbol, mtrend):
     """ Rules to call for a signal """
-    # pylint: disable=global-variable-not-assigned
+    # pylint: disable=global-variable-not-assigned, line-too-long
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
