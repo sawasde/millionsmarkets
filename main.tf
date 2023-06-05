@@ -55,7 +55,7 @@ resource "aws_lambda_function" "cosmobot_lambda" {
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
   memory_size   = 1024
-  timeout       = 200
+  timeout       = 400
 
   environment {
     variables = {

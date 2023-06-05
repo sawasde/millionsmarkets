@@ -38,7 +38,7 @@ COSMO_SYMBOLS_DFS = {}
 @utils.logger.catch
 def check_cosmo_call(symbol, mtrend):
     """ Rules to call for a signal """
-    # pylint: disable=global-variable-not-assigned
+    # pylint: disable=global-variable-not-assigned, line-too-long
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
@@ -47,18 +47,23 @@ def check_cosmo_call(symbol, mtrend):
 
     # 1st check: LongTerm trend
     if abs(curr_area) > limit_area:
-        utils.logger.info(f'{symbol} 1st check passed \
-                            curr_area: {curr_area} limit_area: {limit_area}')
+        utils.logger.info(f'{symbol} 1st check passed area: {curr_area} limit: {limit_area}')
 
         bull_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
         bear_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
 
         # 2nd check: mtrend limit reached BUY or SELL
-        # BUY
-        trade = 'BUY' if mtrend < (bear_limit_mtrend) else None
+        utils.logger.info(f'{symbol} mtrend: {mtrend} limits: {bear_limit_mtrend} {bull_limit_mtrend}')
 
+        # BUY
+        if mtrend < bear_limit_mtrend:
+            trade = 'BUY'
         # SELL
-        trade = 'SELL' if mtrend > (bull_limit_mtrend) else None
+        elif mtrend > bull_limit_mtrend:
+            trade = 'SELL'
+        # NONE
+        else:
+            trade = None
 
         if trade:
             utils.logger.info(f'{symbol} 2nd check passed {trade} mtrend: {mtrend}')
