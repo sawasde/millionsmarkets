@@ -1,6 +1,5 @@
 """ Binance module to get Crypto data """
 # pylint: disable=no-name-in-module, import-error
-import pandas as pd
 import yfinance as yf
 from utils import utils
 
