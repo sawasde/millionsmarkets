@@ -9,7 +9,7 @@ from decimal import Decimal
 from binance.client import Client
 
 # local imports
-from utils import utils, trends, bintrade, dynamodb
+from utils import utils, trends, bintrade, dynamodb, stocktrade
 from utils import cosmomixins
 
 
@@ -102,7 +102,14 @@ def get_stock_planet_trend(symbol):
 
     try:
 
-        return (symbol, None, None, None, None, None, None)
+        # 1day data
+        trend_data = stocktrade.get_chart_data( symbol, period='30d', interval='1d')
+
+        ptrend, pclose, pd_limit, pz_limit = trends.planets_volume(trend_data)
+        minfo = trends.planets_volume(trend_data, trend_type='mean')
+        sinfo = trends.planets_volume(trend_data, trend_type='sum')
+
+        return (symbol, ptrend, minfo[0], sinfo[0], pd_limit, pz_limit, pclose)
 
     except Exception as exc:
         utils.logger.error(exc)
@@ -154,13 +161,13 @@ def launch(event=None, context=None):
         # Use threading but be careful to not impact binance rate limit: max 20 req/s
         symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 10)
 
-    elif SYMBOL_TYPE == 'STOCK':
-        # Log into XXXXX
+    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+
         symbols_chunks = utils.divide_list_chunks(cosmoagent_config['stock_symbols'], 10)
 
     else:
         utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
-        symbols_chunks =[]
+        symbols_chunks = []
 
     for chunk in symbols_chunks:
         for symbol in chunk:

@@ -2,7 +2,8 @@ provider "aws" {
   region = var.region
 }
 
-### COSMO AGENT IAC
+### COSMOAGENT IAC
+### COSMOAGENT ZIP
 
 resource "terraform_data" "cosmoagent_lambda_zip" {
   provisioner "local-exec" {
@@ -11,6 +12,7 @@ resource "terraform_data" "cosmoagent_lambda_zip" {
   }
 }
 
+### COSMOAGENT CRIPTO LAMBDA
 resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
 
   filename      = "cosmoagent.zip"
@@ -37,6 +39,32 @@ resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
 
   depends_on = [ terraform_data.cosmoagent_lambda_zip ]
 }
+
+### COSMOAGENT STOCK LAMBDA
+resource "aws_lambda_function" "cosmoagent_stock_lambda" {
+
+  filename      = "cosmoagent.zip"
+  function_name = var.STAGING == "1" ? "cosmoagent_stock_lambda_staging" : "cosmoagent_stock_lambda"
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  handler       = "cosmoagent.cosmoagent.launch"
+  runtime       = "python3.9"
+  memory_size   = 512
+  timeout       = 60
+
+  environment {
+    variables = {
+      TF_VAR_STAGING = var.STAGING
+      TF_VAR_FROM_LAMBDA = var.FROM_LAMBDA
+      TF_VAR_SYMBOL_TYPE = "STOCK"
+    }
+  }
+
+  layers = [ data.aws_lambda_layer_version.loguru_layer.arn,
+             "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
+
+  depends_on = [ terraform_data.cosmoagent_lambda_zip ]
+}
+
 
 ### COSMO BOT IAC
 
