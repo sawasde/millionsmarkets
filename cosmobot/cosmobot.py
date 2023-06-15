@@ -16,8 +16,8 @@ STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 
 # Discord vars
-DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_HOOK_URL')
 DISCORD_COSMOBOT_ROLE = os.getenv('TF_VAR_COSMOBOT_DISCORD_ROLE')
+DISCORD_COSMOBOT_HOOK_URL = ""
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
@@ -299,7 +299,7 @@ def launch(event=None, context=None):
     """ Launch function """
     # pylint: disable=unused-argument, global-statement
 
-    global COSMOBOT_CONFIG
+    global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
@@ -314,9 +314,11 @@ def launch(event=None, context=None):
 
     if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
+        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
 
     elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['stock_symbols']
+        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
     else:
         symbols = []
 

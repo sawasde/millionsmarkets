@@ -19,7 +19,11 @@ variable "FROM_LAMBDA" {
     type = string
 }
 
-variable "COSMOBOT_DISCORD_HOOK_URL" {
+variable "COSMOBOT_DISCORD_CRYPTO_HOOK_URL" {
+    type = string
+}
+
+variable "COSMOBOT_DISCORD_STOCK_HOOK_URL" {
     type = string
 }
 

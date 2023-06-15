@@ -3,8 +3,8 @@ provider "aws" {
 }
 
 ### COSMOAGENT IAC
-### COSMOAGENT ZIP
 
+### COSMOAGENT ZIP
 resource "terraform_data" "cosmoagent_lambda_zip" {
   provisioner "local-exec" {
     command = "zip -r cosmoagent.zip cosmoagent utils"
@@ -68,6 +68,7 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
 
 ### COSMO BOT IAC
 
+### COSMOAGENT ZIP
 resource "terraform_data" "cosmobot_lambda_zip" {
   provisioner "local-exec" {
     command = "zip -r cosmobot.zip cosmobot utils"
@@ -75,10 +76,11 @@ resource "terraform_data" "cosmobot_lambda_zip" {
   }
 }
 
-resource "aws_lambda_function" "cosmobot_lambda" {
+### COSMOAGENT CRIPTO LAMBDA
+resource "aws_lambda_function" "cosmobot_crypto_lambda" {
 
   filename      = "cosmobot.zip"
-  function_name = var.STAGING == "1" ? "cosmobot_lambda_staging" : "cosmobot_lambda"
+  function_name = var.STAGING == "1" ? "cosmobot__crypto_lambda_staging" : "cosmobot__crypto_lambda"
   role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
@@ -89,13 +91,40 @@ resource "aws_lambda_function" "cosmobot_lambda" {
     variables = {
       TF_VAR_STAGING = var.STAGING
       TF_VAR_FROM_LAMBDA = var.FROM_LAMBDA
-      TF_VAR_COSMOBOT_DISCORD_HOOK_URL = var.COSMOBOT_DISCORD_HOOK_URL
+      TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL = var.TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL
       TF_VAR_COSMOBOT_DISCORD_ROLE = var.COSMOBOT_DISCORD_ROLE
+      TF_VAR_SYMBOL_TYPE = "CRYPTO"
     }
   }
 
-  layers = [ data.aws_lambda_layer_version.binance_layer.arn,
-            data.aws_lambda_layer_version.loguru_layer.arn,
+  layers = [data.aws_lambda_layer_version.loguru_layer.arn,
+            "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
+
+  depends_on = [ terraform_data.cosmobot_lambda_zip ]
+}
+
+### COSMOAGENT STOCK LAMBDA
+resource "aws_lambda_function" "cosmobot_stock_lambda" {
+
+  filename      = "cosmobot.zip"
+  function_name = var.STAGING == "1" ? "cosmobot_stock_lambda_staging" : "cosmobot_stock_lambda"
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  handler       = "cosmobot.cosmobot.launch"
+  runtime       = "python3.9"
+  memory_size   = 1024
+  timeout       = 400
+
+  environment {
+    variables = {
+      TF_VAR_STAGING = var.STAGING
+      TF_VAR_FROM_LAMBDA = var.FROM_LAMBDA
+      TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL = var.TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL
+      TF_VAR_COSMOBOT_DISCORD_ROLE = var.COSMOBOT_DISCORD_ROLE
+      TF_VAR_SYMBOL_TYPE = "STOCK"
+    }
+  }
+
+  layers = [data.aws_lambda_layer_version.loguru_layer.arn,
             "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
 
   depends_on = [ terraform_data.cosmobot_lambda_zip ]
@@ -129,8 +158,7 @@ resource "aws_lambda_function" "monitoring_lambda" {
     }
   }
 
-  layers = [ data.aws_lambda_layer_version.binance_layer.arn,
-            data.aws_lambda_layer_version.loguru_layer.arn,
+  layers = [ data.aws_lambda_layer_version.loguru_layer.arn,
             "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
 
   depends_on = [ terraform_data.cosmobot_lambda_zip ]
