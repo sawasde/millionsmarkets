@@ -47,6 +47,10 @@ data "aws_lambda_layer_version" "binance_layer" {
   layer_name = "binance-layer"
 }
 
+data "aws_lambda_layer_version" "yfinance_layer" {
+  layer_name = "yfinance-layer"
+}
+
 data "aws_lambda_layer_version" "loguru_layer" {
   layer_name = "loguru-layer"
 }
