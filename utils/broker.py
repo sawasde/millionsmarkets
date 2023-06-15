@@ -60,6 +60,8 @@ def binance_get_chart_data(symbol, start='', end='', period=None,
 
     if period == '1d':
         period = bin_client.KLINE_INTERVAL_1DAY
+    else:
+        period = bin_client.KLINE_INTERVAL_15MINUTE
 
     data = bin_client.get_historical_klines(symbol, period, start, end)
 
