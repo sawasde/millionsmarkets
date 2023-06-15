@@ -59,7 +59,8 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
     }
   }
 
-  layers = [  data.aws_lambda_layer_version.loguru_layer.arn,
+  layers = [  data.aws_lambda_layer_version.yfinance_layer.arn,
+              data.aws_lambda_layer_version.loguru_layer.arn,
              "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
 
   depends_on = [ terraform_data.cosmoagent_lambda_zip ]
