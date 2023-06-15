@@ -149,7 +149,7 @@ def integrate_area_below(df_inital='', yaxis='', dx_portion=1.0):
 
 
 @logger.catch
-def discord_webhhok_send(url, username, content, embed=False, attemps=5):
+def discord_webhook_send(url, username, content, embed=False, attemps=5):
     """ send messages using Discord webhook
             embed = {"description": "desc", "title": "embed title"}
     """
@@ -180,3 +180,25 @@ def divide_list_chunks(lis, chunks):
 
     for i in range(0, len(lis), chunks):
         yield lis[i:i + chunks]
+
+@logger.catch
+def is_stock_market_hours():
+    """ return True if we're in stock market hours """
+
+    now = date_now(use_tuple=True, tmz='US/Eastern')
+    # y, m, d, h, minute, sec, wd, yd, i
+    hour = now[3]
+    minute = now[4]
+    wday = now[6]
+
+    if 0 <= wday <= 4:
+        # US stock open close hours
+        if hour <9 or hour > 16:
+            return False
+        # US stock ensure starting at 9:30 am
+        if hour == 9 and minute < 30:
+            return False
+
+        return True
+
+    return False

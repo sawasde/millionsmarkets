@@ -32,8 +32,5 @@ def plot_sublots(df_initial, plot_features_dicts, xaxis='', save=None, style='-o
         fig.savefig(save)
 
     # close
-    plt.cla()
-    plt.clf()
-    plt.close('all')
     plt.close(fig)
     gc.collect()

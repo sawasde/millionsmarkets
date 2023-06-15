@@ -104,8 +104,8 @@ def aux_format_dynamo_df(df_inital, df_call=False):
     df_result['timestamp'] = df_result['timestamp'].astype('int')
     df_result = df_result.sort_values('timestamp')
 
-    # Delete outliers in certain cols
-    if not df_call:
+    # Delete outliers in certain cols, ensure medium size dataframe
+    if not df_call and len(df_result) >= 1000:
         outliers_cols = ['pclose']
         for col in outliers_cols:
             q_hi = df_result[col].quantile(0.999)
