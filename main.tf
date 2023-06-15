@@ -12,7 +12,7 @@ resource "terraform_data" "cosmoagent_lambda_zip" {
   }
 }
 
-### COSMOAGENT CRIPTO LAMBDA
+### COSMOAGENT CRYPTO LAMBDA
 resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
 
   filename      = "cosmoagent.zip"
@@ -76,11 +76,11 @@ resource "terraform_data" "cosmobot_lambda_zip" {
   }
 }
 
-### COSMOAGENT CRIPTO LAMBDA
+### COSMOBOT CRYPTO LAMBDA
 resource "aws_lambda_function" "cosmobot_crypto_lambda" {
 
   filename      = "cosmobot.zip"
-  function_name = var.STAGING == "1" ? "cosmobot__crypto_lambda_staging" : "cosmobot__crypto_lambda"
+  function_name = var.STAGING == "1" ? "cosmobot_crypto_lambda_staging" : "cosmobot_crypto_lambda"
   role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
@@ -103,7 +103,7 @@ resource "aws_lambda_function" "cosmobot_crypto_lambda" {
   depends_on = [ terraform_data.cosmobot_lambda_zip ]
 }
 
-### COSMOAGENT STOCK LAMBDA
+### COSMOBOT STOCK LAMBDA
 resource "aws_lambda_function" "cosmobot_stock_lambda" {
 
   filename      = "cosmobot.zip"
