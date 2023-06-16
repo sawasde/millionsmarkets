@@ -2,6 +2,7 @@
 # pylint: disable=import-error,no-name-in-module
 import os
 import pandas as pd
+import requests
 from utils import utils
 
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
@@ -9,10 +10,6 @@ SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 if SYMBOL_TYPE == 'CRYPTO':
     from binance.client import Client as binanceClient
 
-elif SYMBOL_TYPE == 'STOCK':
-    import yfinance as yf
-else:
-    utils.logger.error('WRONG SYMBOL')
 
 @utils.logger.catch
 def binance_get_price_by_symbol(all_crypto_price, symbol='BTCBUSD'):
@@ -83,12 +80,35 @@ def binance_get_chart_data(symbol, start='', end='', period=None,
 
 
 @utils.logger.catch
-def yfinance_get_chart_data(symbol, period='1d', interval='1d'):
+def yfinance_get_chart_data(symbol, period='1d', interval='1d', timeout=30):
     """ Return Symbol Market Data as dataframe """
 
-    data = yf.download(symbol, period=period, interval=interval, progress=False)
-    data = data.reset_index()
-    data.columns= data.columns.str.lower()
-    data = data[['date', 'open', 'close', 'high', 'low', 'volume']]
+    new_data = {}
+    url = f'https://query2.finance.yahoo.com/v8/finance/chart/{symbol}'
 
-    return data
+    user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
+    user_agent +=  ' AppleWebKit/537.36 (KHTML, like Gecko)'
+    user_agent +=  'Chrome/39.0.2171.95 Safari/537.36'
+
+    headers = { 'User-Agent': user_agent}
+    params = {'range': period, 'interval': interval}
+
+    response = requests.get(
+                        url=url,
+                        params=params,
+                        timeout=timeout,
+                        headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+    else:
+        raise RuntimeError(f'Error code: {response.status_code} text: {response.text}')
+
+    data = data['chart']['result'][0]
+    new_data['timestamp'] = data['timestamp']
+
+    for col_name in ['open', 'high', 'low', 'close', 'volume']:
+        new_data[col_name] = data['indicators']['quote'][0][col_name]
+
+    df_result = pd.DataFrame.from_dict(new_data)
+    return df_result
