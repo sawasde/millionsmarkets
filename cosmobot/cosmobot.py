@@ -41,6 +41,9 @@ def check_cosmo_call(symbol, mtrend):
     """ Rules to call for a signal """
     # pylint: disable=global-variable-not-assigned, line-too-long
 
+    if len(COSMO_SYMBOLS_DFS[symbol]) < cosmomixins.MIN_DF_LEN:
+        return None
+
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
     # filter mtrend
@@ -117,7 +120,7 @@ def update_cosmo_parameters(symbol):
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
-    if len(symbol_df) > 1000:
+    if len(symbol_df) > cosmomixins.MIN_DF_LEN:
         mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
         mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
 
