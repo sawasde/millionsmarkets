@@ -17,15 +17,21 @@ AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 CONFIG_TABLE_NAME = None
 
 # Monitoring VARS
-MONITORING_RESULTS = { 'cosmoagent' : {}, 'cosmobot' : {}}
+MONITORING_RESULTS = {  'cosmoagent' : {'cryptos': {}, 'stocks': {}},
+                        'cosmobot' : {'cryptos': {}, 'stocks': {}}}
 SYMBOLS_BASE_PATH = 'monitoring/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 
 
 @utils.logger.catch
-def monitor_cosmoagent(symbol):
+def monitor_cosmoagent(symbol_set, symbol):
     """ Search for a cosmoagent historical symbol and compare the timestamp
         Use X minutes diff"""
+
+    # In case stock market is off, return True
+    if symbol_set == 'stocks' and not utils.is_stock_market_hours():
+        return True
+
     csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
 
     if FROM_LAMBDA:
@@ -34,7 +40,6 @@ def monitor_cosmoagent(symbol):
     else:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
                                                             symbol, csv_path, 1, 99, True, STAGING)
-
     now_tms = symbol_df['timestamp'].iloc[-1]
     diff_tms = utils.date_ago_timestmp(minutes=10)
 
@@ -45,9 +50,13 @@ def monitor_cosmoagent(symbol):
 
 
 @utils.logger.catch
-def monitor_cosmobot(symbol):
+def monitor_cosmobot(symbol_set, symbol):
     """ Search for a cosmobot symbol parameters and compare the timestamp
         Use X minutes diff"""
+
+    # In case stock market is off, return True
+    if symbol_set == 'stocks' and not utils.is_stock_market_hours():
+        return True
 
     symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
                                                 CONFIG_TABLE_NAME,
@@ -68,20 +77,24 @@ def send_monitoring_report(bot):
 
     utils.logger.info(f'{bot} Sending Report')
 
-    msg = f'**{bot.upper()} Status:\n**'
+    msg = f'**{bot.upper()}  Status:**\n'
 
-    for symbol, status in MONITORING_RESULTS[bot].items():
 
-        msg += f'{symbol}\t'
-        msg += ':white_check_mark:' if status else ':x:'
-        msg += '\n'
+    for symbol_set, symbol_info in MONITORING_RESULTS[bot].items():
+        msg += f'**{symbol_set.upper()}:\n**'
+
+        for symbol, status in symbol_info.items():
+
+            msg += f'{symbol}\t'
+            msg += ':white_check_mark:' if status else ':x:'
+            msg += '\n'
 
     msg += '-' *15 + '\n'
-    utils.discord_webhhok_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
+    utils.discord_webhook_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
 
 
 @utils.logger.catch
-def run(bot, symbol):
+def run(bot, symbol_set, symbol):
     """ Run Monitoring for each bot"""
     # pylint: disable=global-variable-not-assigned
 
@@ -90,7 +103,7 @@ def run(bot, symbol):
     function_name = f'monitor_{bot}'
     func =  globals()[function_name]
 
-    MONITORING_RESULTS[bot][symbol] = func(symbol)
+    MONITORING_RESULTS[bot][symbol_set][symbol] = func(symbol_set, symbol)
 
 
 @utils.logger.catch
@@ -113,17 +126,21 @@ def launch(event=None, context=None):
         bot_config = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
                                                             CONFIG_TABLE_NAME)
 
+        symbols_set = {'cryptos': bot_config['crypto_symbols'],
+                       'stocks':bot_config['stock_symbols']}
+
         # Start bot run() with threads
         threads = []
 
-        for symbol in bot_config['crypto_symbols']:
+        for sym_set, symbols in symbols_set.items():
+            for symbol in symbols:
 
-            runner = threading.Thread(target=run, args=(monitoring_bot, symbol,))
-            threads.append(runner)
-            runner.start()
+                runner = threading.Thread(target=run, args=(monitoring_bot, sym_set, symbol,))
+                threads.append(runner)
+                runner.start()
 
-        for thread in threads:
-            thread.join()
+            for thread in threads:
+                thread.join()
 
         if len(MONITORING_RESULTS[monitoring_bot]) > 0:
             send_monitoring_report(monitoring_bot)

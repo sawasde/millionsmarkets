@@ -17,7 +17,8 @@ jobs:
       TF_VAR_BIN_API_SECRET : ${{ secrets.TF_VAR_BIN_API_SECRET }}
       TF_VAR_STAGING : ${{ vars.TF_VAR_STAGING }}
       TF_VAR_FROM_LAMBDA : ${{ vars.TF_VAR_FROM_LAMBDA }}
-      TF_VAR_COSMOBOT_DISCORD_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_HOOK_URL }}
+      TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL }}
+      TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL }}
       TF_VAR_COSMOBOT_DISCORD_ROLE : ${{ vars.TF_VAR_COSMOBOT_DISCORD_ROLE }}
       TF_VAR_MONITORING_DISCORD_HOOK_URL : ${{ secrets.TF_VAR_MONITORING_DISCORD_HOOK_URL }}
 
@@ -39,21 +40,39 @@ jobs:
     - name: Terraform validation
       run: terraform validate
 
-    - name: Terraform import cosmoagent lambda function
+
+    - name: Terraform import cosmoagent CRYPTO lambda function
       run: terraform import --input=false aws_lambda_function.cosmoagent_crypto_lambda cosmoagent_crypto_lambda
       continue-on-error: true
 
-    - name: Terraform import cosmoagent lambda trigger
+    - name: Terraform import cosmoagent CRYPTO lambda trigger
       run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent_crypto cosmoagent_crypto_lambda/event_bridge_trigger_cosmoagent_crypto
       continue-on-error: true
 
-    - name: Terraform import cosmobot lambda function
-      run: terraform import --input=false aws_lambda_function.cosmobot_lambda cosmobot_lambda
+    - name: Terraform import cosmoagent STOCK lambda function
+      run: terraform import --input=false aws_lambda_function.cosmoagent_stock_lambda cosmoagent_stock_lambda
       continue-on-error: true
 
-    - name: Terraform import cosmobot lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmobot cosmobot_lambda/event_bridge_trigger_cosmobot
+    - name: Terraform import cosmoagent STOCK lambda trigger
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent_stock cosmoagent_stock_lambda/event_bridge_trigger_cosmoagent_stock
       continue-on-error: true
+
+    - name: Terraform import cosmobot CRYPTO lambda function
+      run: terraform import --input=false aws_lambda_function.cosmobot_crypto_lambda cosmobot_crypto_lambda
+      continue-on-error: true
+
+    - name: Terraform import cosmobot CRYPTO lambda trigger
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmobot_crypto cosmobot_crypto_lambda/event_bridge_trigger_cosmobot_crypto
+      continue-on-error: true
+
+    - name: Terraform import cosmobot STOCK lambda function
+      run: terraform import --input=false aws_lambda_function.cosmobot_stock_lambda cosmobot_stock_lambda
+      continue-on-error: true
+
+    - name: Terraform import cosmobot STOCK lambda trigger
+      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmobot_stock cosmobot_stock_lambda/event_bridge_trigger_cosmobot_stock
+      continue-on-error: true
+
 
     - name: Terraform import monitoring lambda function
       run: terraform import --input=false aws_lambda_function.monitoring_lambda monitoring_lambda

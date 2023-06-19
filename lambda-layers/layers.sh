@@ -3,19 +3,20 @@
 payload_path="payloads"
 
 declare -A package_dict
-package_dict["binance"]="python-binance"
-package_dict["discord"]="discord.py"
-package_dict["loguru"]="loguru"
+package_dict["yfinance"]="yfinance"
+#package_dict["binance"]="python-binance"
+#package_dict["discord"]="discord.py"
+#package_dict["loguru"]="loguru"
 
 py_version="3.9"
 
 # Check if a directory does not exist and create it
-if [ ! -d "$payload_path" ] 
+if [ ! -d "$payload_path" ]
 then
     echo "[+] Creating $payload_path directory"
     mkdir "$payload_path"
 else
-    echo "[+] Directory $payload_path exists." 
+    echo "[+] Directory $payload_path exists."
 fi
 
 cd "$payload_path"

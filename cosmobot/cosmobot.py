@@ -16,8 +16,8 @@ STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 
 # Discord vars
-DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_HOOK_URL')
 DISCORD_COSMOBOT_ROLE = os.getenv('TF_VAR_COSMOBOT_DISCORD_ROLE')
+DISCORD_COSMOBOT_HOOK_URL = ""
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
@@ -27,18 +27,22 @@ if STAGING:
 else:
     CONFIG_TABLE_NAME = 'mm_cosmobot'
 
-# General vars
+# cosmobot vars
 COSMOBOT_CONFIG = {}
 SYMBOLS_BASE_PATH = 'cosmobot/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 COSMO_SYMBOLS_PARAMETERS = {}
 COSMO_SYMBOLS_DFS = {}
+SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
 
 @utils.logger.catch
 def check_cosmo_call(symbol, mtrend):
     """ Rules to call for a signal """
     # pylint: disable=global-variable-not-assigned, line-too-long
+
+    if len(COSMO_SYMBOLS_DFS[symbol]) < cosmomixins.MIN_DF_LEN:
+        return None
 
     curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
@@ -116,8 +120,14 @@ def update_cosmo_parameters(symbol):
 
     mtrend_array = symbol_df['mtrend'].to_numpy()
     # Find local peaks
-    mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
-    mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
+    if len(symbol_df) > cosmomixins.MIN_DF_LEN:
+        mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
+        mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
+
+    else:
+        utils.logger.info(f'{symbol} Not enough data')
+        mtrend_maxima = []
+        mtrend_minima = []
 
     utils.logger.info(f'{symbol} MAX Peaks {mtrend_maxima}')
     utils.logger.info(f'{symbol} MIN Peaks {mtrend_minima}')
@@ -254,15 +264,13 @@ def run(symbol):
             area = symbol_cosmo_info['area']
             area = '{:.2e}'.format(area)
 
-
-
             # Prepare message
             msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
 
             if STAGING:
                 utils.logger.info(msg)
 
-            utils.discord_webhhok_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
+            utils.discord_webhook_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
             to_put = {  'week' : cosmo_time[0],
                         'timestamp' : cosmo_time[4],
@@ -294,7 +302,7 @@ def launch(event=None, context=None):
     """ Launch function """
     # pylint: disable=unused-argument, global-statement
 
-    global COSMOBOT_CONFIG
+    global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
@@ -307,10 +315,20 @@ def launch(event=None, context=None):
     # Log discord
     utils.logger.info('Load Discord vars')
 
+    if SYMBOL_TYPE == 'CRYPTO':
+        symbols = COSMOBOT_CONFIG['crypto_symbols']
+        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
+
+    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+        symbols = COSMOBOT_CONFIG['stock_symbols']
+        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
+    else:
+        symbols = []
+
     # Start bot run() with threads
     threads = []
 
-    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+    for symbol in symbols:
         runner = threading.Thread(target=run, args=(symbol,))
         threads.append(runner)
         runner.start()

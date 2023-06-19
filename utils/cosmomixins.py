@@ -6,6 +6,8 @@ from pathlib import Path
 import pandas as pd
 from utils import utils, dynamodb
 
+MIN_DF_LEN = 1000
+
 
 @utils.logger.catch
 def get_cosmobot_time(timestamp=None):
@@ -104,8 +106,8 @@ def aux_format_dynamo_df(df_inital, df_call=False):
     df_result['timestamp'] = df_result['timestamp'].astype('int')
     df_result = df_result.sort_values('timestamp')
 
-    # Delete outliers in certain cols
-    if not df_call:
+    # Delete outliers in certain cols, ensure medium size dataframe
+    if not df_call and len(df_result) > MIN_DF_LEN:
         outliers_cols = ['pclose']
         for col in outliers_cols:
             q_hi = df_result[col].quantile(0.999)
