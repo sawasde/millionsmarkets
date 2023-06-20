@@ -161,7 +161,8 @@ def check_time(symbol, df_initial, time_diff=260):
 
 
 @utils.logger.catch
-def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260, save=True, stag=True):
+def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260,
+                                    save=True, stag=True, keep_hist=False):
     """ Main function to get data from dynamo compared and optimed to the local data """
     # pylint: disable=too-many-arguments
 
@@ -179,7 +180,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260, save
 
         else:
             utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
-            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, (last_tms), stag)
+            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, last_tms, stag)
 
             df_result = pd.concat([static_df, dynamo_df], ignore_index=True)
             df_result = df_result.sort_values('timestamp')
@@ -193,6 +194,12 @@ def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260, save
 
     if save:
         utils.logger.info(f'{symbol} saving CSV {path}')
+
+        if not keep_hist:
+            days_ago = weeks * 7
+            tms_ago = utils.date_ago_timestmp(days=days_ago)
+            df_result = df_result[df_result['timestamp'] >= tms_ago]
+
         df_result.to_csv(path, index=False)
 
     return df_result

@@ -26,13 +26,13 @@ resource "aws_cloudwatch_event_rule" "rate_20_minutes" {
 resource "aws_cloudwatch_event_rule" "us_stock_market_4_minutes" {
   name = "lambda_event_rule_us_stock_market_4_minutes"
   description = "monday to friday from 9:00 am to 4:00pm UTC. each 4 minutes"
-  schedule_expression = "cron(0/4 14-20 ? * MON-FRI *)"
+  schedule_expression = "cron(0/4 13-20 ? * MON-FRI *)"
 }
 
 resource "aws_cloudwatch_event_rule" "us_stock_market_8_minutes" {
   name = "lambda_event_rule_us_stock_market_8_minutes"
   description = "monday to friday from 9:00 am to 4:00pm UTC. each 8 minutes"
-  schedule_expression = "cron(0/8 14-20 ? * MON-FRI *)"
+  schedule_expression = "cron(0/8 13-20 ? * MON-FRI *)"
 }
 
 
