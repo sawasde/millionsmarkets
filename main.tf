@@ -147,7 +147,7 @@ resource "aws_lambda_function" "monitoring_lambda" {
   role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
   handler       = "monitoring.monitoring.launch"
   runtime       = "python3.9"
-  memory_size   = 1024
+  memory_size   = 512
   timeout       = 600
 
   environment {
