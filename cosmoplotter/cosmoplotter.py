@@ -76,7 +76,8 @@ def run(symbol, days_ago):
                                                             weeks,
                                                             521,
                                                             True,
-                                                            STAGING)
+                                                            STAGING,
+                                                            False)
 
         # Plot
         utils.logger.info(f'{symbol} Plotting ...')
