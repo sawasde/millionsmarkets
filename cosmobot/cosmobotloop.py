@@ -1,15 +1,15 @@
 """ Run cosmoagent in a twisted loop """
 # pylint: disable=no-name-in-module, import-error
 
+import time
 from twisted.internet import task, reactor
 from cosmobot import cosmobot as cbot
 from utils import utils
-import time
 
 
 @utils.logger.catch
 def run():
-
+    """ Loop Run of cosmobot """
     utils.logger.info('Run Cosmobot on cryptos')
     cbot.SYMBOL_TYPE = 'CRYPTO'
     cbot.launch()
