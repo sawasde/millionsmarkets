@@ -3,7 +3,7 @@
 
 import os
 import threading
-from utils import utils, dynamodb, cosmomixins
+from utils import utils, dynamodb
 
 #Staging
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
@@ -17,6 +17,7 @@ AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 CONFIG_TABLE_NAME = None
 
 # Monitoring VARS
+CA_SYMBOLS_TIMESTAMPS = {}
 MONITORING_RESULTS = {  'cosmoagent' : {'cryptos': {}, 'stocks': {}},
                         'cosmobot' : {'cryptos': {}, 'stocks': {}}}
 SYMBOLS_BASE_PATH = 'monitoring/assets/'
@@ -32,15 +33,10 @@ def monitor_cosmoagent(symbol_set, symbol):
     if symbol_set == 'stocks' and not utils.is_stock_market_hours():
         return True
 
-    csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
+    if symbol not in CA_SYMBOLS_TIMESTAMPS.keys():
+        return False
 
-    if FROM_LAMBDA:
-        symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
-                                                           symbol, csv_path, 1, 99, False, STAGING)
-    else:
-        symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
-                                                            symbol, csv_path, 1, 99, True, STAGING)
-    now_tms = symbol_df['timestamp'].iloc[-1]
+    now_tms = CA_SYMBOLS_TIMESTAMPS[symbol]
     diff_tms = utils.date_ago_timestmp(minutes=10)
 
     if now_tms > diff_tms:
@@ -58,9 +54,9 @@ def monitor_cosmobot(symbol_set, symbol):
     if symbol_set == 'stocks' and not utils.is_stock_market_hours():
         return True
 
-    symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                CONFIG_TABLE_NAME,
-                                                {'feature' : f'{symbol}_parameters'})
+    symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
+                                                                CONFIG_TABLE_NAME,
+                                                                f'{symbol}_parameters')
 
     now_tms = symbol_parameter_item['timestamp']
     diff_tms = utils.date_ago_timestmp(minutes=12)
@@ -111,7 +107,7 @@ def launch(event=None, context=None):
     """ Load configs and run once the agent """
     # pylint: disable=unused-argument, global-statement
 
-    global CONFIG_TABLE_NAME
+    global CONFIG_TABLE_NAME, CA_SYMBOLS_TIMESTAMPS
 
     bots = MONITORING_RESULTS.keys()
 
@@ -122,6 +118,10 @@ def launch(event=None, context=None):
         else:
             CONFIG_TABLE_NAME = f'mm_{monitoring_bot}'
 
+        if monitoring_bot == 'cosmoagent':
+            CA_SYMBOLS_TIMESTAMPS = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+                                                        CONFIG_TABLE_NAME,
+                                                        'symbols_timestamps')
         # Load config
         bot_config = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
                                                             CONFIG_TABLE_NAME)
