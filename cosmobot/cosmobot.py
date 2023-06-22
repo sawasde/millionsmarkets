@@ -152,7 +152,8 @@ def update_cosmo_parameters(symbol):
         dynamodb.put_item(  AWS_DYNAMO_SESSION,
                             CONFIG_TABLE_NAME,
                             {'feature' : f'{symbol}_parameters',
-                            'value' : symbol_parameter_item})
+                            'value' : symbol_parameter_item},
+                            'sa-east-1')
 
 
 @utils.logger.catch
@@ -312,8 +313,9 @@ def launch(event=None, context=None):
     if not FROM_LAMBDA:
         utils.logger_path(COSMOBOT_CONFIG['log_path'])
 
-    # Log discord
-    utils.logger.info('Load Discord vars')
+    if event == 'first_launch':
+        utils.logger.info('First launch: only loads config')
+        return
 
     if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']

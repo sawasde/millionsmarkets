@@ -11,9 +11,9 @@ def launch():
     """ Load cosmoagent first, then the loop config and run it """
     # pylint: disable=no-member
 
-    cat.launch()
+    cat.launch(event='first_launch')
 
     loop_timeout = int(cat.COSMOAGENT_CONFIG['loop_timeout'])
-    loop_call = task.LoopingCall(cat.run)
+    loop_call = task.LoopingCall(cat.launch)
     loop_call.start(loop_timeout)
     reactor.run()

@@ -17,7 +17,7 @@ resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
 
   filename      = "cosmoagent.zip"
   function_name = var.STAGING == "1" ? "cosmoagent_crypto_lambda_staging" : "cosmoagent_crypto_lambda"
-  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
   memory_size   = 512
@@ -45,7 +45,7 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
 
   filename      = "cosmoagent.zip"
   function_name = var.STAGING == "1" ? "cosmoagent_stock_lambda_staging" : "cosmoagent_stock_lambda"
-  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
   memory_size   = 512
@@ -81,7 +81,7 @@ resource "aws_lambda_function" "cosmobot_crypto_lambda" {
 
   filename      = "cosmobot.zip"
   function_name = var.STAGING == "1" ? "cosmobot_crypto_lambda_staging" : "cosmobot_crypto_lambda"
-  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
   memory_size   = 1024
@@ -108,7 +108,7 @@ resource "aws_lambda_function" "cosmobot_stock_lambda" {
 
   filename      = "cosmobot.zip"
   function_name = var.STAGING == "1" ? "cosmobot_stock_lambda_staging" : "cosmobot_stock_lambda"
-  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn
   handler       = "cosmobot.cosmobot.launch"
   runtime       = "python3.9"
   memory_size   = 1024
@@ -144,7 +144,7 @@ resource "aws_lambda_function" "monitoring_lambda" {
 
   filename      = "monitoring.zip"
   function_name = var.STAGING == "1" ? "monitoring_lambda_staging" : "monitoring_lambda"
-  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_lambda_role.arn
+  role          = var.STAGING == "1" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn
   handler       = "monitoring.monitoring.launch"
   runtime       = "python3.9"
   memory_size   = 512
