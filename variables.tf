@@ -35,7 +35,7 @@ variable "COSMOBOT_DISCORD_ROLE" {
     type = string
 }
 
-data "aws_iam_role" "mm_lambda_role" {
+data "aws_iam_role" "mm_bots_role" {
   name = "mm_bots_role"
 }
 

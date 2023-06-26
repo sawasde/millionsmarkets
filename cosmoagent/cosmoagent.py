@@ -15,6 +15,8 @@ from utils import cosmomixins
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 
 # Cosmoagent vars
+COSMOAGENT_CONFIG = {}
+SYMBOLS_TIMESTAMPS = {}
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
@@ -24,12 +26,25 @@ if STAGING:
     CONFIG_TABLE_NAME = 'mm_cosmoagent_staging'
 else:
     CONFIG_TABLE_NAME = 'mm_cosmoagent'
+SYMBOLS_TIMESTAMPS_FEATURE = 'symbols_timestamps'
+
+@utils.logger.catch
+def put_symbols_timestamps():
+    """ Put symbols timestamps for monitoring purposes """
+    utils.logger.info('Put Symbols timestamps')
+
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        CONFIG_TABLE_NAME,
+                        {'feature' : SYMBOLS_TIMESTAMPS_FEATURE,
+                        'value' : SYMBOLS_TIMESTAMPS},
+                        region='sa-east-1')
 
 
 @utils.logger.catch
 def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pclose):
     """ Put planet trend indicator in Dynamo table """
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, global-variable-not-assigned
+    global SYMBOLS_TIMESTAMPS
 
     utils.logger.info(f'{symbol} Put Planet info')
 
@@ -59,6 +74,8 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
                         table_name,
                         item,
                         region='sa-east-1')
+
+    SYMBOLS_TIMESTAMPS[symbol] = Decimal(cosmo_timestamp)
 
 
 
@@ -130,24 +147,33 @@ def run(symbol):
 def launch(event=None, context=None):
     """ Load configs and run once the agent"""
     # pylint: disable=unused-argument, global-statement
-
+    global COSMOAGENT_CONFIG, SYMBOLS_TIMESTAMPS
     # Load config
-    cosmoagent_config = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
                                                             CONFIG_TABLE_NAME)
+
+    SYMBOLS_TIMESTAMPS = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+                                                            CONFIG_TABLE_NAME,
+                                                            SYMBOLS_TIMESTAMPS_FEATURE)
+
 
     # Log path
     if not FROM_LAMBDA:
-        utils.logger_path(cosmoagent_config['log_path'])
+        utils.logger_path(COSMOAGENT_CONFIG['log_path'])
+
+    if event == 'first_launch':
+        utils.logger.info('First launch: only loads config')
+        return
 
     # Start bot run() with threads
     threads = []
 
     if SYMBOL_TYPE == 'CRYPTO':
         # Use threading but be careful to not impact binance rate limit: max 20 req/s
-        symbols_chunks = utils.divide_list_chunks(cosmoagent_config['crypto_symbols'], 10)
+        symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['crypto_symbols'], 10)
 
     elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
-        symbols_chunks = utils.divide_list_chunks(cosmoagent_config['stock_symbols'], 10)
+        symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['stock_symbols'], 10)
 
     else:
         if not utils.is_stock_market_hours():
@@ -166,3 +192,5 @@ def launch(event=None, context=None):
             thread.join()
 
         time.sleep(2)
+
+    put_symbols_timestamps()

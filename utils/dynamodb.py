@@ -7,11 +7,11 @@ from boto3.dynamodb.conditions import Key
 from utils import utils
 
 @utils.logger.catch
-def load_feature_value_config(dyn_session, table):
+def load_feature_value_config(dyn_session, table, value='config'):
     """ Load feature(key) value(value) config table """
 
-    utils.logger.info(f'Load Config for {table}')
-    return get_item(dyn_session, table, {'feature' : 'config'})
+    utils.logger.info(f'Load Config for {table} {value}')
+    return get_item(dyn_session, table, {'feature' : value})
 
 
 @utils.logger.catch
