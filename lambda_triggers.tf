@@ -29,10 +29,10 @@ resource "aws_cloudwatch_event_rule" "us_stock_market_4_minutes" {
   schedule_expression = "cron(0/4 13-20 ? * MON-FRI *)"
 }
 
-resource "aws_cloudwatch_event_rule" "us_stock_market_8_minutes" {
-  name = "lambda_event_rule_us_stock_market_8_minutes"
-  description = "monday to friday from 9:00 am to 4:00pm UTC. each 8 minutes"
-  schedule_expression = "cron(0/8 13-20 ? * MON-FRI *)"
+resource "aws_cloudwatch_event_rule" "us_stock_market_20_minutes" {
+  name = "lambda_event_rule_us_stock_market_20_minutes"
+  description = "monday to friday from 9:00 am to 4:00pm UTC. each 20 minutes"
+  schedule_expression = "cron(0/20 13-20 ? * MON-FRI *)"
 }
 
 
@@ -70,29 +70,29 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_stock" {
 resource "aws_cloudwatch_event_target" "cosmobot_crypto_trigger" {
   target_id = var.STAGING == "1" ? "cosmobot_crypto_event_lambda_staging" : "cosmobot_crypto_event_lambda"
   arn = aws_lambda_function.cosmobot_crypto_lambda.arn
-  rule = aws_cloudwatch_event_rule.rate_8_minutes.name
+  rule = aws_cloudwatch_event_rule.rate_20_minutes.name
 }
 
 resource "aws_lambda_permission" "allow_eventbridge_cosmobot_crypto" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cosmobot_crypto_lambda.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.rate_8_minutes.arn
+  source_arn    = aws_cloudwatch_event_rule.rate_20_minutes.arn
   statement_id  = "event_bridge_trigger_cosmobot_crypto"
 }
 
-# COSMOBOT CRYPTO TRIGGERS
+# COSMOBOT STOCK TRIGGERS
 resource "aws_cloudwatch_event_target" "cosmobot_stock_trigger" {
   target_id = var.STAGING == "1" ? "cosmobot_stock_event_lambda_staging" : "cosmobot_stock_event_lambda"
   arn = aws_lambda_function.cosmobot_stock_lambda.arn
-  rule = aws_cloudwatch_event_rule.us_stock_market_8_minutes.name
+  rule = aws_cloudwatch_event_rule.us_stock_market_20_minutes.name
 }
 
 resource "aws_lambda_permission" "allow_eventbridge_cosmobot_stock" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cosmobot_stock_lambda.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.us_stock_market_8_minutes.arn
+  source_arn    = aws_cloudwatch_event_rule.us_stock_market_20_minutes.arn
   statement_id  = "event_bridge_trigger_cosmobot_stock"
 }
 
