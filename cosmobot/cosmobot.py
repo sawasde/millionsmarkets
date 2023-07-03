@@ -299,7 +299,7 @@ def run(symbol):
 
 
 @utils.logger.catch
-def launch(event=None, context=None):
+def launch(event=None, context=None, threads_chunks=None):
     """ Launch function """
     # pylint: disable=unused-argument, global-statement
 
@@ -328,12 +328,19 @@ def launch(event=None, context=None):
         symbols = []
 
     # Start bot run() with threads
-    threads = []
+    if threads_chunks:
+        symbols_chunks = utils.divide_list_chunks(symbols, threads_chunks)
+        for chunk in symbols_chunks:
+            threads = []
 
-    for symbol in symbols:
-        runner = threading.Thread(target=run, args=(symbol,))
-        threads.append(runner)
-        runner.start()
+            for symbol in chunk:
+                runner = threading.Thread(target=run, args=(symbol,))
+                threads.append(runner)
+                runner.start()
 
-    for thread in threads:
-        thread.join()
+            for thread in threads:
+                thread.join()
+    # No threading
+    else:
+        for symbol in symbols:
+            run(symbol)
