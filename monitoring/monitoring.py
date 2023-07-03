@@ -59,7 +59,7 @@ def monitor_cosmobot(symbol_set, symbol):
                                                                 f'{symbol}_parameters')
 
     now_tms = symbol_parameter_item['timestamp']
-    diff_tms = utils.date_ago_timestmp(minutes=12)
+    diff_tms = utils.date_ago_timestmp(minutes=20)
 
     if now_tms > diff_tms:
         return True

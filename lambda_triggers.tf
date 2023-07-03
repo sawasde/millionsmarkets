@@ -70,14 +70,14 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_stock" {
 resource "aws_cloudwatch_event_target" "cosmobot_crypto_trigger" {
   target_id = var.STAGING == "1" ? "cosmobot_crypto_event_lambda_staging" : "cosmobot_crypto_event_lambda"
   arn = aws_lambda_function.cosmobot_crypto_lambda.arn
-  rule = aws_cloudwatch_event_rule.rate_8_minutes.name
+  rule = aws_cloudwatch_event_rule.rate_20_minutes.name
 }
 
 resource "aws_lambda_permission" "allow_eventbridge_cosmobot_crypto" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cosmobot_crypto_lambda.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.rate_8_minutes.arn
+  source_arn    = aws_cloudwatch_event_rule.rate_20_minutes.arn
   statement_id  = "event_bridge_trigger_cosmobot_crypto"
 }
 
@@ -85,14 +85,14 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmobot_crypto" {
 resource "aws_cloudwatch_event_target" "cosmobot_stock_trigger" {
   target_id = var.STAGING == "1" ? "cosmobot_stock_event_lambda_staging" : "cosmobot_stock_event_lambda"
   arn = aws_lambda_function.cosmobot_stock_lambda.arn
-  rule = aws_cloudwatch_event_rule.us_stock_market_8_minutes.name
+  rule = aws_cloudwatch_event_rule.us_stock_market_20_minutes.name
 }
 
 resource "aws_lambda_permission" "allow_eventbridge_cosmobot_stock" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cosmobot_stock_lambda.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.us_stock_market_8_minutes.arn
+  source_arn    = aws_cloudwatch_event_rule.us_stock_market_20_minutes.arn
   statement_id  = "event_bridge_trigger_cosmobot_stock"
 }
 

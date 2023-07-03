@@ -156,7 +156,6 @@ def launch(event=None, context=None):
                                                             CONFIG_TABLE_NAME,
                                                             SYMBOLS_TIMESTAMPS_FEATURE)
 
-
     # Log path
     if not FROM_LAMBDA:
         utils.logger_path(COSMOAGENT_CONFIG['log_path'])
