@@ -68,13 +68,13 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
 ### COSMOBOT CRYPTO & STOCK EC2
 resource "aws_security_group" "mm_cosmobot_sg" {
   name        = "mm_cosmobot_sg"
-  description = "Only Allows Outbound traffic"
+  description = "Only Allows ALL Outbound traffic and SSH ingress"
   vpc_id = "vpc-05d9eaf34986af7ae"
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
