@@ -118,7 +118,6 @@ resource "aws_instance" "cosmobot_instance" {
 }
 
 ### MONITORING IAC
-
 resource "terraform_data" "monitoring_lambda_zip" {
   provisioner "local-exec" {
     command = "zip -r monitoring.zip monitoring utils"
@@ -147,5 +146,5 @@ resource "aws_lambda_function" "monitoring_lambda" {
   layers = [ data.aws_lambda_layer_version.loguru_layer.arn,
             "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
 
-  depends_on = [ terraform_data.cosmobot_lambda_zip ]
+  depends_on = [ terraform_data.monitoring_lambda_zip ]
 }
