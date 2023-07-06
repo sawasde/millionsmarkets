@@ -65,7 +65,7 @@ jobs:
       continue-on-error: true
 
     - name: Terraform import security groups
-      run: terraform import --input=false aws_security_group.mm_cosmobot_sg mm_cosmobot_sg
+      run: terraform import --input=false aws_security_group.mm_cosmobot_sg sg-027bd553480ab0026
       continue-on-error: true
 
     - name: Terraform import IAM Instance Profile
