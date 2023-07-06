@@ -69,7 +69,7 @@ jobs:
       continue-on-error: true
 
     - name: Terraform import IAM Instance Profile
-      run: terraform import --input=false aws_iam_instance_profile.cosmobot_ec2_profile cosmobot_ec2_profile
+      run: terraform import --input=false aws_iam_instance_profile.cosmobot_ec2_profile cosmobot_ec2_profile_staging
       continue-on-error: true
 
     - name: Terraform apply
