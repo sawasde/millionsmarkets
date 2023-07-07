@@ -69,8 +69,8 @@ jobs:
       continue-on-error: true
 
     - name: Terraform import EC2 instance
-      run: terraform import --input=false aws_instance.cosmobot_instance i-0920990903c7f590a
+      run: terraform import --input=false aws_instance.cosmobot_instance i-06db9ce38ced2b5a2
       continue-on-error: true
 
     - name: Terraform apply
-      run: terraform apply --auto-approve --input=false --replace="aws_instance.cosmobot_instance"
+      run: terraform apply --auto-approve --input=false
