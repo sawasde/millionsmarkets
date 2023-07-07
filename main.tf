@@ -66,24 +66,6 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
 
 ### COSMO BOT IAC
 ### COSMOBOT CRYPTO & STOCK EC2
-resource "aws_security_group" "mm_cosmobot_sg" {
-  name        = "mm_cosmobot_sg"
-  description = "Only Allows ALL Outbound traffic and SSH ingress"
-  vpc_id = "vpc-05d9eaf34986af7ae"
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
 resource "aws_iam_instance_profile" "cosmobot_ec2_profile" {
   name = var.STAGING == "1" ? "cosmobot_ec2_profile_staging" : "cosmobot_ec2_profile"
   role = var.STAGING == "1" ? data.aws_iam_role.mm_bots_ec2_role_staging.name : data.aws_iam_role.mm_bots_ec2_role.name
@@ -104,10 +86,7 @@ data "template_file" "cosmobot_user_data" {
 resource "aws_instance" "cosmobot_instance" {
     ami = "ami-0aba9f6e2597c6993" # ubuntu arm64
     instance_type = "t4g.nano"
-    #ami = "ami-0461cf0c292037658"
-    #instance_type = "t4g.nano"
-    vpc_security_group_ids = [aws_security_group.mm_cosmobot_sg.id]
-    subnet_id = "subnet-017de528afca95c8d"
+    vpc_security_group_ids = ["sg-0afa708ce5f1d4dd1"]
     associate_public_ip_address = "true"
     iam_instance_profile = "${aws_iam_instance_profile.cosmobot_ec2_profile.name}"
     user_data = "${data.template_file.cosmobot_user_data.rendered}"
