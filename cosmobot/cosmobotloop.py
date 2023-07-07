@@ -26,7 +26,7 @@ def launch():
     cbot.launch(event='first_launch')
 
     cron_expr = cbot.COSMOBOT_CONFIG['cron_expression']
-    command = 'sudo python3 /millionsmarkets/cosmobot/cosmobotloop.py'
+    command = "cd /millionsmarkets && sudo python3 -c 'from cosmobot import cosmobotloop.py as cbl; cbl.run()'"
     user = 'root'
 
     utils.logger.info('Creating CRON Job')
