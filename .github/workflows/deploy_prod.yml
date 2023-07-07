@@ -64,5 +64,9 @@ jobs:
       run: terraform import --input=false aws_lambda_permission.allow_eventbridge_monitoring monitoring_lambda/event_bridge_trigger_monitoring
       continue-on-error: true
 
+    - name: Terraform import IAM Instance Profile
+      run: terraform import --input=false aws_iam_instance_profile.cosmobot_ec2_profile cosmobot_ec2_profile
+      continue-on-error: true
+
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false --replace="aws_instance.cosmobot_instance"
