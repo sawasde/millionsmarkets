@@ -1,7 +1,7 @@
-""" Run cosmoagent in a twisted loop """
+""" Run cosmoagent in a cron job """
 # pylint: disable=no-name-in-module, import-error
 
-from twisted.internet import task, reactor
+import os
 from cosmobot import cosmobot as cbot
 from utils import utils
 
@@ -25,7 +25,14 @@ def launch():
 
     cbot.launch(event='first_launch')
 
-    loop_timeout = int(cbot.COSMOBOT_CONFIG['loop_timeout'])
-    loop_call = task.LoopingCall(run)
-    loop_call.start(loop_timeout)
-    reactor.run()
+    cron_expr = cbot.COSMOBOT_CONFIG['cron_expression']
+    python_cmd = 'from cosmobot import cosmobotloop as cbl; cbl.run()'
+    command = f"cd /millionsmarkets && sudo python3 -c '{python_cmd}'"
+    user = 'root'
+    cron_file = '/etc/crontab'
+
+    utils.logger.info('Creating CRON Job')
+    os.system(f'sudo echo "{cron_expr} {user} {command}" >> {cron_file}')
+
+if __name__ == "__main__":
+    run()

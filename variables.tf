@@ -43,6 +43,14 @@ data "aws_iam_role" "mm_bots_role_staging" {
   name = "mm_bots_role_staging"
 }
 
+data "aws_iam_role" "mm_bots_ec2_role" {
+  name = "mm_bots_ec2_role"
+}
+
+data "aws_iam_role" "mm_bots_ec2_role_staging" {
+  name = "mm_bots_ec2_role_staging"
+}
+
 data "aws_lambda_layer_version" "binance_layer" {
   layer_name = "binance-layer"
 }
