@@ -84,7 +84,8 @@ data "template_file" "cosmobot_user_data" {
 }
 
 resource "aws_instance" "cosmobot_instance" {
-    ami = "ami-0aba9f6e2597c6993" # ubuntu arm64
+    name = "cosmobot_instance"
+    ami = "ami-0aba9f6e2597c6993" # ubuntu 20.04 arm64
     instance_type = "t4g.nano"
     vpc_security_group_ids = ["sg-0afa708ce5f1d4dd1"]
     associate_public_ip_address = "true"
