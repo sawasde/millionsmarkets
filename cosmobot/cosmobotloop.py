@@ -21,7 +21,7 @@ def run():
 @utils.logger.catch
 def launch():
     """ Load cosmoagent first, then the loop config and run it """
-    # pylint: disable=no-member
+    # pylint: disable=no-member,line-too-long
 
     cbot.launch(event='first_launch')
 
