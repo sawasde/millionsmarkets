@@ -6,7 +6,7 @@ echo "TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL=${TF_VAR_COSMOBOT_DISCORD_CRYPTO_H
 echo "TF_VAR_COSMOBOT_DISCORD_ROLE=${TF_VAR_COSMOBOT_DISCORD_ROLE}" >> /etc/environment
 
 echo "[+] Cloning project" >> "${LOGS_FILENAME}"
-git clone https://github.com/sawasde/millionsmarkets.git
+git clone -b "${BRANCH}" https://github.com/sawasde/millionsmarkets.git
 cd millionsmarkets
 
 echo "[+] Installing PIP" >> "${LOGS_FILENAME}"

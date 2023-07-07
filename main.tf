@@ -76,10 +76,11 @@ data "template_file" "cosmobot_user_data" {
 
   vars = {
     TF_VAR_STAGING = var.STAGING
-    TF_VAR_FROM_LAMBDA = var.FROM_LAMBDA
+    TF_VAR_FROM_LAMBDA = "0"
     TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL = var.COSMOBOT_DISCORD_CRYPTO_HOOK_URL
     TF_VAR_COSMOBOT_DISCORD_ROLE = var.COSMOBOT_DISCORD_ROLE
     LOGS_FILENAME = var.STAGING == "1" ? "cosmobot_staging.log" : "cosmobot_prod.log"
+    BRANCH = var.STAGING == "1" ? "staging" : "main"
   }
 }
 
