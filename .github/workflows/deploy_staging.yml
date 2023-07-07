@@ -69,4 +69,4 @@ jobs:
       continue-on-error: true
 
     - name: Terraform apply
-      run: terraform apply --auto-approve --input=false --replace="aws_instance.cosmobot_instance"
+      run: terraform apply --auto-approve --input=false
