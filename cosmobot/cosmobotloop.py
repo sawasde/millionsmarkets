@@ -21,16 +21,18 @@ def run():
 @utils.logger.catch
 def launch():
     """ Load cosmoagent first, then the loop config and run it """
-    # pylint: disable=no-member,line-too-long
+    # pylint: disable=no-member
 
     cbot.launch(event='first_launch')
 
     cron_expr = cbot.COSMOBOT_CONFIG['cron_expression']
-    command = "cd /millionsmarkets && sudo python3 -c 'from cosmobot import cosmobotloop.py as cbl; cbl.run()'"
+    python_cmd = 'from cosmobot import cosmobotloop as cbl; cbl.run()'
+    command = f"cd /millionsmarkets && sudo python3 -c '{python_cmd}'"
     user = 'root'
+    cron_file = '/var/spool/cron/root'
 
     utils.logger.info('Creating CRON Job')
-    os.system(f'sudo echo "{cron_expr} {user} {command}" >> /etc/crontab')
+    os.system(f'sudo echo "{cron_expr} {user} {command}" >> {cron_file}')
 
 if __name__ == "__main__":
     run()
