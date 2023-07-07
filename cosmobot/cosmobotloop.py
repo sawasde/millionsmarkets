@@ -29,7 +29,7 @@ def launch():
     python_cmd = 'from cosmobot import cosmobotloop as cbl; cbl.run()'
     command = f"cd /millionsmarkets && sudo python3 -c '{python_cmd}'"
     user = 'root'
-    cron_file = '/var/spool/cron/root'
+    cron_file = '/etc/crontab'
 
     utils.logger.info('Creating CRON Job')
     os.system(f'sudo echo "{cron_expr} {user} {command}" >> {cron_file}')
