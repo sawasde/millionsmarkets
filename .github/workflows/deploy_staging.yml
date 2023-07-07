@@ -68,9 +68,5 @@ jobs:
       run: terraform import --input=false aws_iam_instance_profile.cosmobot_ec2_profile cosmobot_ec2_profile_staging
       continue-on-error: true
 
-    - name: Terraform destroy EC2 instance
-      run: terraform destroy --target aws_instance.cosmobot_instance
-      continue-on-error: true
-
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
