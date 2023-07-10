@@ -91,7 +91,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None, stag
 
 
 @utils.logger.catch
-def aux_format_dynamo_df(df_inital, df_call=False):
+def aux_format_dynamo_df(df_inital, ignore_outliers=False):
     """ Establish a good format DataFrame """
 
     to_float_cols = ['ptrend', 'mtrend', 'strend', 'pclose', 'pd_limit', 'pz_limit']
@@ -107,7 +107,7 @@ def aux_format_dynamo_df(df_inital, df_call=False):
     df_result = df_result.sort_values('timestamp')
 
     # Delete outliers in certain cols, ensure medium size dataframe
-    if not df_call and len(df_result) > MIN_DF_LEN:
+    if not ignore_outliers and len(df_result) > MIN_DF_LEN:
         outliers_cols = ['pclose']
         for col in outliers_cols:
             q_hi = df_result[col].quantile(0.999)
@@ -169,7 +169,7 @@ def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260,
     if os.path.exists(path):
         utils.logger.info(f'{symbol} Found CSV {path}')
         static_df = pd.read_csv(path)
-        static_df = aux_format_dynamo_df(static_df)
+        static_df = aux_format_dynamo_df(static_df, ignore_outliers=True)
 
         last_tms = int(static_df['timestamp'].iloc[-1])
 
