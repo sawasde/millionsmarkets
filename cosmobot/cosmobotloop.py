@@ -11,7 +11,7 @@ def run():
     """ Loop Run of cosmobot """
     utils.logger.info('Run Cosmobot on cryptos')
     cbot.SYMBOL_TYPE = 'CRYPTO'
-    cbot.launch()
+    cbot.launch(event='set_log_path')
 
     utils.logger.info('Run Cosmobot on stocks')
     cbot.SYMBOL_TYPE = 'STOCK'
