@@ -213,7 +213,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
     if len(info) == 0:
         return True
 
-    last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info), df_call=True)
+    last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info), ignore_outliers=True)
     mask = (last_call['symbol'] == symbol) & (last_call['cosmo_call'] == cosmo_call)
     filter_call = last_call[mask]
 
@@ -310,7 +310,7 @@ def launch(event=None, context=None, threads_chunks=None):
                                                             CONFIG_TABLE_NAME)
 
     # Log path
-    if not FROM_LAMBDA:
+    if not FROM_LAMBDA and event == 'set_log_path':
         utils.logger_path(COSMOBOT_CONFIG['log_path'])
 
     if event == 'first_launch':
