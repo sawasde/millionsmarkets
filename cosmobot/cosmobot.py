@@ -310,7 +310,7 @@ def launch(event=None, context=None, threads_chunks=None):
                                                             CONFIG_TABLE_NAME)
 
     # Log path
-    if not FROM_LAMBDA:
+    if not FROM_LAMBDA and event == 'set_log_path':
         utils.logger_path(COSMOBOT_CONFIG['log_path'])
 
     if event == 'first_launch':
