@@ -45,7 +45,7 @@ jobs:
       run: terraform validate
 
     - name: Terraform ensure ec2 cosmobot instance is destroyed
-      run: terraform destroy --target aws_instance.cosmobot_instance --input=false
+      run: terraform destroy --target aws_instance.cosmobot_instance --auto-approve --input=false
 
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
