@@ -82,12 +82,12 @@ def send_monitoring_report(bot):
         for symbol, status in symbol_info.items():
 
             general_status = False if not status else general_status
-            msg += f'{symbol}:\t'
+            msg += f'{symbol}: '
             msg += ':white_check_mark:' if status else ':x:'
             msg += '\t'
         msg += '\n'
 
-    msg += '-' *15 + '\n'
+    msg += '\n'
     # Alert @Role that something failed
     msg += f'<@&{DISCORD_MONITORING_ROLE}>' if not general_status else ''
 

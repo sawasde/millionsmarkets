@@ -37,7 +37,7 @@ resource "aws_cloudwatch_event_rule" "us_stock_market_2_minutes" {
 
 # COSMOAGENT CRYPTO TRIGGERS
 resource "aws_cloudwatch_event_target" "cosmoagent_crypto_trigger" {
-  target_id = var.STAGING == "1" ? "cosmoagent_crypto_event_lambda_staging" : "cosmoagent_crypto_event_lambda"
+  target_id = terraform.workspace == "staging" ? "mm_cosmoagent_crypto_event_lambda_staging" : "mm_cosmoagent_crypto_event_lambda"
   arn = aws_lambda_function.cosmoagent_crypto_lambda.arn
   rule = aws_cloudwatch_event_rule.rate_2_minutes.name
 }
@@ -52,7 +52,7 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_crypto" {
 
 # COSMOAGENT STOCK TRIGGERS
 resource "aws_cloudwatch_event_target" "cosmoagent_stock_trigger" {
-  target_id = var.STAGING == "1" ? "cosmoagent_stock_event_lambda_staging" : "cosmoagent_stock_event_lambda"
+  target_id = terraform.workspace == "staging" ? "mm_cosmoagent_stock_event_lambda_staging" : "mm_cosmoagent_stock_event_lambda"
   arn = aws_lambda_function.cosmoagent_stock_lambda.arn
   rule = aws_cloudwatch_event_rule.us_stock_market_2_minutes.name
 }
@@ -67,7 +67,7 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_stock" {
 
 # MONITORING TRIGGERS
 resource "aws_cloudwatch_event_target" "monitoring_trigger" {
-  target_id = var.STAGING == "1" ? "monitoring_event_lambda_staging" : "monitoring_event_lambda"
+  target_id = terraform.workspace == "staging" ? "mm_monitoring_event_lambda_staging" : "mm_monitoring_event_lambda"
   arn = aws_lambda_function.monitoring_lambda.arn
   rule = aws_cloudwatch_event_rule.rate_20_minutes.name
 }
