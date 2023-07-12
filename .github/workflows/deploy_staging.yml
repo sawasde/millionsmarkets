@@ -38,36 +38,14 @@ jobs:
     - name: Terraform init
       run: terraform init --upgrade --input=false
 
+    - name: Terraform workspace
+      run: terraform workspace select staging
+
     - name: Terraform validation
       run: terraform validate
 
-    - name: Terraform import cosmoagent CRYPTO lambda function
-      run: terraform import --input=false aws_lambda_function.cosmoagent_crypto_lambda cosmoagent_crypto_lambda_staging
-      continue-on-error: true
-
-    - name: Terraform import cosmoagent CRYPTO lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent_crypto cosmoagent_crypto_lambda_staging/event_bridge_trigger_cosmoagent_crypto
-      continue-on-error: true
-
-    - name: Terraform import cosmoagent STOCK lambda function
-      run: terraform import --input=false aws_lambda_function.cosmoagent_stock_lambda cosmoagent_stock_lambda_staging
-      continue-on-error: true
-
-    - name: Terraform import cosmoagent STOCK lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_cosmoagent_stock cosmoagent_stock_lambda_staging/event_bridge_trigger_cosmoagent_stock
-      continue-on-error: true
-
-    - name: Terraform import monitoring lambda function
-      run: terraform import --input=false aws_lambda_function.monitoring_lambda monitoring_lambda_staging
-      continue-on-error: true
-
-    - name: Terraform import monitoring lambda trigger
-      run: terraform import --input=false aws_lambda_permission.allow_eventbridge_monitoring monitoring_lambda_staging/event_bridge_trigger_monitoring
-      continue-on-error: true
-
-    - name: Terraform import IAM Instance Profile
-      run: terraform import --input=false aws_iam_instance_profile.cosmobot_ec2_profile cosmobot_ec2_profile_staging
-      continue-on-error: true
+    - name: Terraform ensure ec2 cosmobot instance is destroyed
+      run: terraform destroy --target aws_instance.cosmobot_instance --input=false
 
     - name: Terraform apply
       run: terraform apply --auto-approve --input=false
