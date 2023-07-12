@@ -99,7 +99,9 @@ def launch():
     # Start bot run() with threads
     threads = []
 
-    for symbol in COSMOBOT_CONFIG['crypto_symbols']:
+    symbols = COSMOBOT_CONFIG['crypto_symbols'] + COSMOBOT_CONFIG['stock_symbols']
+
+    for symbol in symbols:
         runner = threading.Thread(target=run, args=(symbol,[31, 13],))
         threads.append(runner)
         runner.start()
