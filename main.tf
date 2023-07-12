@@ -120,6 +120,7 @@ resource "aws_lambda_function" "monitoring_lambda" {
       TF_VAR_STAGING = var.STAGING
       TF_VAR_FROM_LAMBDA = var.FROM_LAMBDA
       TF_VAR_MONITORING_DISCORD_HOOK_URL = var.MONITORING_DISCORD_HOOK_URL
+      TF_VAR_MONITORING_DISCORD_ROLE = var.MONITORING_DISCORD_ROLE
     }
   }
 

@@ -11,6 +11,7 @@ FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 
 # Discord vars
 DISCORD_MONITORING_HOOK_URL = os.getenv('TF_VAR_MONITORING_DISCORD_HOOK_URL')
+DISCORD_MONITORING_ROLE = os.getenv('TF_VAR_MONITORING_DISCORD_ROLE')
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
@@ -70,9 +71,8 @@ def monitor_cosmobot(symbol_set, symbol):
 @utils.logger.catch
 def send_monitoring_report(bot):
     """ Send via Discord the monitoring report """
-
     utils.logger.info(f'{bot} Sending Report')
-
+    general_status = True
     msg = f'**{bot.upper()}  Status:**\n'
 
 
@@ -81,11 +81,16 @@ def send_monitoring_report(bot):
 
         for symbol, status in symbol_info.items():
 
-            msg += f'{symbol}\t'
+            general_status = False if not status else general_status
+            msg += f'{symbol}:\t'
             msg += ':white_check_mark:' if status else ':x:'
-            msg += '\n'
+            msg += '\t'
+        msg += '\n'
 
     msg += '-' *15 + '\n'
+    # Alert @Role that something failed
+    msg += f'<@&{DISCORD_MONITORING_ROLE}>' if not general_status else ''
+
     utils.discord_webhook_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
 
 
