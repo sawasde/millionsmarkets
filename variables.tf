@@ -31,6 +31,10 @@ variable "MONITORING_DISCORD_HOOK_URL" {
     type = string
 }
 
+variable "MONITORING_DISCORD_ROLE" {
+    type = string
+}
+
 variable "COSMOBOT_DISCORD_ROLE" {
     type = string
 }
