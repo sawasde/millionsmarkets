@@ -39,7 +39,7 @@ jobs:
       run: terraform init --input=false
 
     - name: Terraform workspace
-      run: terraform workspace select staging
+      run: terraform workspace select prod
 
     - name: Terraform validation
       run: terraform validate
