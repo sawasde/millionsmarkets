@@ -178,11 +178,16 @@ def update_cosmo_dfs(symbol):
 
 
 @utils.logger.catch
-def prepare_msg(call, symbol, mtrend, pclose, role):
+def prepare_msg(call, symbol, mtrend, pclose, area, role):
     """ Prepare Discord message """
+    # pylint: disable=too-many-arguments
+    long_term = 'Up' if area > 0 else 'Down'
+    short_term = 'Up' if mtrend > 0 else 'Down'
+
     # Prepare message
     msg = f'{call} **{symbol}**\n'
-    msg += f'**Cosmo Trend**: {mtrend:.2f}\n'
+    msg += f'**Long  Term**: {long_term}\n'
+    msg += f'**Short Term**: {short_term}\n'
     msg += f'**Price**: ${pclose:,}\n'
     msg += f'<@&{role}>'
     return msg
@@ -266,7 +271,7 @@ def run(symbol):
             area = '{:.2e}'.format(area)
 
             # Prepare message
-            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose, DISCORD_COSMOBOT_ROLE)
+            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose,area, DISCORD_COSMOBOT_ROLE)
 
             if STAGING:
                 utils.logger.info(msg)
