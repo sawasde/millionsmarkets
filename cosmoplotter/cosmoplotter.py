@@ -66,7 +66,7 @@ def run(symbol, days_ago):
         # Get df
         weeks = 1 + (day // 7)
         utils.logger.info(f'{symbol} days: {day} weeks: {weeks}')
-
+        print('WEEKS: ',weeks)
         # Check DFs
         utils.logger.info(f'{symbol} Checking DFs')
         csv_path = CSV_ASSET_PATH.format(CHART_BASE_PATH, symbol)
@@ -77,7 +77,7 @@ def run(symbol, days_ago):
                                                             521,
                                                             True,
                                                             STAGING,
-                                                            False)
+                                                            True)
 
         # Plot
         utils.logger.info(f'{symbol} Plotting ...')
@@ -85,7 +85,7 @@ def run(symbol, days_ago):
 
 
 @utils.logger.catch
-def launch():
+def launch(symbol_type='both'):
     """ Launch fucntion """
     # pylint: disable=global-statement
     global COSMOBOT_CONFIG
@@ -98,8 +98,14 @@ def launch():
 
     # Start bot run() with threads
     threads = []
-
-    symbols = COSMOBOT_CONFIG['crypto_symbols'] + COSMOBOT_CONFIG['stock_symbols']
+    if symbol_type == 'crypto':
+        symbols = COSMOBOT_CONFIG['crypto_symbols']
+    elif symbol_type == 'stock':
+        symbols = COSMOBOT_CONFIG['stock_symbols']
+    elif symbol_type == 'both':
+        symbols = COSMOBOT_CONFIG['crypto_symbols'] + COSMOBOT_CONFIG['stock_symbols']
+    else:
+        symbols = []
 
     for symbol in symbols:
         runner = threading.Thread(target=run, args=(symbol,[31, 13],))
