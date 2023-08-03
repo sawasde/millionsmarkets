@@ -48,4 +48,4 @@ jobs:
       run: terraform destroy --target aws_instance.cosmobot_instance --auto-approve --input=false
 
     - name: Terraform apply
-      run: terraform apply --auto-approve --input=false --replace="aws_instance.cosmobot_instance"
+      run: terraform apply --auto-approve --input=false
