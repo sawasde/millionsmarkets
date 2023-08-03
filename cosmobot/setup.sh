@@ -30,7 +30,7 @@ generate_config_file()
         "collect_list": [
           {
             "file_path": "/millionsmarkets/${LOGS_FILENAME}",
-            "log_group_name": "mm_${LOGS_FILENAME}",
+            "log_group_name": "${LOGS_FILENAME}",
             "log_stream_name": "{instance_id}",
             "retention_in_days": 1
           }
