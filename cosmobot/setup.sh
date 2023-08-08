@@ -32,7 +32,7 @@ generate_config_file()
             "file_path": "/millionsmarkets/${LOGS_FILENAME}",
             "log_group_name": "${LOGS_FILENAME}",
             "log_stream_name": "{instance_id}",
-            "retention_in_days": 365
+            "retention_in_days": 180
           }
         ]
       }
