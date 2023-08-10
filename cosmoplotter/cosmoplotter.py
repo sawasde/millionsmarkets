@@ -31,13 +31,19 @@ def plotter(symbol, df_initial, day):
     df_result = cosmomixins.aux_format_plotter_df(symbol, df_initial, day)
 
     png_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.png'
+    html_file_path_temp = f'{CHART_BASE_PATH}{symbol}_{day}.html'
 
     plotting.plot_sublots(  df_initial=df_result,
                             plot_features_dicts=[{'pclose':'g', 'pz_limit':'b'},
                                                 {'area':'r', 'zero_bound':'b'},
                                                 {'mtrend':'g', 'zero_bound':'b'},
                                                 ],
-                        xaxis='timestamp', save=png_file_path_temp, style='-', show=False)
+                            xaxis='timestamp',
+                            save=png_file_path_temp,
+                            html=html_file_path_temp,
+                            style='-',
+                            show=False)
+
     utils.logger.info(symbol, day, 'PLOT SAVED')
 
 
