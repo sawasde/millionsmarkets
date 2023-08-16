@@ -9,7 +9,8 @@ from utils import utils
 
 
 @utils.logger.catch
-def plot_sublots(df_initial, plot_features_dicts, xaxis='', save=None, html=None, style='-o', show=False):
+def plot_sublots(df_initial, plot_features_dicts, xaxis='',
+                    save=None, html=None, style='-o', show=False):
     """ One plot with multiple subplots """
     # pylint: disable=too-many-arguments
 
@@ -33,10 +34,9 @@ def plot_sublots(df_initial, plot_features_dicts, xaxis='', save=None, html=None
         fig.savefig(save)
 
     if html:
-        html_str = mpld3.fig_to_html(fig)
-        html_file= open(html,"w")
-        html_file.write(html_str)
-        html_file.close()
+        with open(html, "w", encoding='utf-8') as html_file:
+            html_file.write(mpld3.fig_to_html(fig))
+            html_file.close()
 
     # close
     plt.close(fig)
