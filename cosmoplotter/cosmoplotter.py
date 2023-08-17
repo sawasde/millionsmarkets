@@ -50,15 +50,12 @@ def plotter(symbol, df_initial, day, symbol_type):
 @utils.logger.catch
 def remove_plot(symbol):
     """ Remove all local pictures """
-    # pylint: disable=unused-variable
-    #filename = search_for_file_extension(symbol, )
-    for root, dirs, files in os.walk(CHART_BASE_PATH):
-        for basename in files:
-            filename = os.path.join(root, basename)
 
-            if symbol in filename and (filename.endswith('.png')
-                                       or filename.endswith('.html')):
-                os.remove(filename)
+    delete_exts = ['.png', '.html']
+
+    for ext in delete_exts:
+        filename = search_for_file_extension(symbol, ext)
+        os.remove(filename)
 
 
 @utils.logger.catch
@@ -93,25 +90,35 @@ def run(symbol, days_ago, symbol_type):
 
 @utils.logger.catch
 def search_for_file_extension(symbol, ext):
-    for root, dirs, files in os.walk(CHART_BASE_PATH):
-            for basename in files:
-                filename = os.path.join(root, basename)
+    """ search a file containing the symbol and extension """
+    # pylint: disable=unused-variable
 
-                if symbol in filename and filename.endswith(ext):
-                    return filename
+    for root, dirs, files in os.walk(CHART_BASE_PATH):
+        for basename in files:
+            filename = os.path.join(root, basename)
+
+            if symbol in filename and filename.endswith(ext):
+                return filename
+    return None
 
 @utils.logger.catch
 def create_main_html(symbols, symbol_type):
+    """ Create a main html plotter file """
 
+    utils.logger.info(f'Create main html file for {symbol_type}')
     html_output_file = f'{CHART_BASE_PATH}{symbol_type}/main.html'
-    for symbol in symbols:
-        filename = search_for_file_extension(symbol, '.html')
 
-        if filename:
-            with open(html_output_file, 'a') as f:
-                f.write(f'<h1>{symbol} CHART:</h1>\n')
-                with open(filename, 'r') as symbol_html:
-                    f.write(symbol_html)
+    if os.path.isfile(html_output_file):
+        os.remove(html_output_file)
+
+    for symbol in symbols:
+        filename_html = search_for_file_extension(symbol, '.html')
+
+        if filename_html:
+            with open(html_output_file, 'a', encoding='utf-8') as main_html,\
+                    open(filename_html, 'r', encoding='utf-8') as part_html:
+                main_html.write(f'<h1>{symbol} CHART:</h1>\n')
+                main_html.write(part_html.read())
 
 
 
