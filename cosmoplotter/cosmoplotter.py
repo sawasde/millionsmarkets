@@ -51,11 +51,13 @@ def plotter(symbol, df_initial, day, symbol_type):
 def remove_plot(symbol):
     """ Remove all local pictures """
 
+    utils.logger.info(f'{symbol} Removing plots ...')
     delete_exts = ['.png', '.html']
 
     for ext in delete_exts:
         filename = search_for_file_extension(symbol, ext)
-        os.remove(filename)
+        if filename:
+            os.remove(filename)
 
 
 @utils.logger.catch
@@ -63,7 +65,6 @@ def run(symbol, days_ago, symbol_type):
     """ Main function """
 
     # Remove previous plots
-    utils.logger.info(f'{symbol} Removing plots ...')
     remove_plot(symbol)
 
     for day in days_ago:

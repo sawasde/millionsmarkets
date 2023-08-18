@@ -186,8 +186,8 @@ def prepare_msg(call, symbol, mtrend, pclose, area, role):
 
     # Prepare message
     msg = f'{call} **{symbol}**\n'
-    msg += f'**Long  Term**: {long_term}\n'
-    msg += f'**Short Term**: {short_term}\n'
+    msg += f'**Long  Trend**: {long_term}\n'
+    msg += f'**Short Trend**: {short_term}\n'
     msg += f'**Price**: ${pclose:,}\n'
     msg += f'<@&{role}>'
     return msg
@@ -268,7 +268,7 @@ def run(symbol):
             pd_limit = symbol_cosmo_info['pd_limit']
             pz_limit = symbol_cosmo_info['pz_limit']
             area = symbol_cosmo_info['area']
-            area = '{:.2e}'.format(area)
+            area = float('{:.2e}'.format(area))
 
             # Prepare message
             msg = prepare_msg(cosmo_call, symbol, mtrend, pclose,area, DISCORD_COSMOBOT_ROLE)
