@@ -44,7 +44,7 @@ def plotter(symbol, df_initial, day, symbol_type):
                             style='-',
                             show=False)
 
-    utils.logger.info(symbol, day, 'PLOT SAVED')
+    utils.logger.info(f'{symbol}_{day} PLOT SAVED')
 
 
 @utils.logger.catch

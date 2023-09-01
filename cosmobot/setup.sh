@@ -3,6 +3,7 @@
 echo "TF_VAR_STAGING=${TF_VAR_STAGING}" >> /etc/environment
 echo "TF_VAR_FROM_LAMBDA=${TF_VAR_FROM_LAMBDA}" >> /etc/environment
 echo "TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL=${TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL}" >> /etc/environment
+echo "TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL=${TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL}" >> /etc/environment
 echo "TF_VAR_COSMOBOT_DISCORD_ROLE=${TF_VAR_COSMOBOT_DISCORD_ROLE}" >> /etc/environment
 
 echo "[+] Cloning project" >> "${LOGS_FILENAME}"
@@ -15,6 +16,8 @@ sudo python3 get-pip.py --user
 
 echo "[+] Installing Dependencies" >> "${LOGS_FILENAME}"
 sudo python3 -m pip install -r requirements.txt
+
+sudo python3 -m pip install  -U pyopenssl cryptography
 
 echo "[+] Setup CLoudWatchLogs" >> "${LOGS_FILENAME}"
 generate_config_file()
