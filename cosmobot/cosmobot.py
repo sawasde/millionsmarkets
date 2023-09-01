@@ -322,11 +322,11 @@ def launch(event=None, context=None, threads_chunks=None):
         utils.logger.info('First launch: only loads config')
         return
 
-    if SYMBOL_TYPE == 'CRYPTO':
+    if SYMBOL_TYPE == 'crypto':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'stock' and utils.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['stock_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
     else:

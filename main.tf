@@ -78,6 +78,7 @@ data "template_file" "cosmobot_user_data" {
     TF_VAR_STAGING = var.STAGING
     TF_VAR_FROM_LAMBDA = "0"
     TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL = var.COSMOBOT_DISCORD_CRYPTO_HOOK_URL
+    TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL = var.COSMOBOT_DISCORD_STOCK_HOOK_URL
     TF_VAR_COSMOBOT_DISCORD_ROLE = var.COSMOBOT_DISCORD_ROLE
     LOGS_FILENAME = "${terraform.workspace == "staging" ? "mm_cosmobot_staging.log" : "mm_cosmobot_prod.log"}"
     BRANCH = "${terraform.workspace == "staging" ? "staging" : "main"}"
