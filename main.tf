@@ -98,25 +98,6 @@ resource "aws_instance" "cosmobot_instance" {
     }
 }
 
-### COSMOBOT EC2 VOLUMES
-resource "aws_ebs_volume" "cosmobot_ebs_volume" {
-  availability_zone = "sa-east-1b"
-  size = 8
-  type = "gp3"
-  iops = 100
-  tags = {
-    Name = "${terraform.workspace == "staging" ? "mm_cosmobot_ebs_staging" : "mm_cosmobot_ebs"}"
-  }
-}
-
-resource "aws_volume_attachment" "cosmobot_ebs_attach" {
-
-    device_name = "/dev/sda1"
-    volume_id = aws_ebs_volume.cosmobot_ebs_volume.id
-    instance_id = aws_instance.cosmobot_instance.id
-
-}
-
 ### MONITORING IAC
 resource "terraform_data" "monitoring_lambda_zip" {
   provisioner "local-exec" {
