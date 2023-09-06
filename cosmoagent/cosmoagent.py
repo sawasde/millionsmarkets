@@ -81,7 +81,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
 def get_crypto_planet_trend(symbol):
     """ Get planet trend indicator data """
-    # pylint: disable=broad-exception-caught
+    # pylint: disable=broad-except
     utils.logger.info(f'{symbol} Get Planet info')
 
     try:
@@ -107,7 +107,7 @@ def get_crypto_planet_trend(symbol):
 
 def get_stock_planet_trend(symbol):
     """ Get planet trend indicator data """
-    # pylint: disable=broad-exception-caught
+    # pylint: disable=broad-except
     utils.logger.info(f'Get Planet info for {symbol}')
 
     try:
