@@ -282,7 +282,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 def run(symbol):
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, line-too-long
 
     global COSMOBOT_CONFIG
 
@@ -315,8 +315,7 @@ def run(symbol):
             # Get Take Profit & Stop Loss
             result, take_profit, stop_loss = get_tp_sl(cosmo_call, pclose, pclose_max, pclose_min)
             if result:
-                utils.logger.info(f'{symbol} 4th check passed pclose: {pclose} \
-                                            tp: {take_profit} sl: {stop_loss}')
+                utils.logger.info(f'{symbol} 4th check passed pclose: {pclose} tp: {take_profit} sl: {stop_loss}')
 
 
                 # Prepare message
