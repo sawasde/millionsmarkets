@@ -99,6 +99,42 @@ def find_peaks(initial_array, order=8888, peak_type='max'):
 
     return np.array(peaks)
 
+@utils.logger.catch
+def helper_find_price_by_peak(symbol_df, peaks):
+    """ Find the price given a peak """
+
+    result = []
+    for peak in peaks:
+        pclose = symbol_df[symbol_df['mtrend'] == peak]['pclose'].iloc[-1]
+        result.append(pclose)
+
+    return result
+
+@utils.logger.catch
+def get_tp_sl(trade, pclose, pclose_max, pclose_min):
+    """ Analyze take profits for short term and long term """
+
+    result = False
+    take_profit, stop_loss = 0.0, 0.0
+
+    if trade == 'BUY':
+        take_profit = max(pclose_max)
+        stop_loss = min(pclose_min)
+        result = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
+                            <= take_profit
+        result = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
+                            >= stop_loss
+
+    elif trade == 'SELL':
+        take_profit = min(pclose_min)
+        stop_loss = max(pclose_max)
+        result = True and pclose - (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
+                            >= take_profit
+        result = True and pclose + (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
+                            <= stop_loss
+
+
+    return result, take_profit, stop_loss
 
 @utils.logger.catch
 def update_cosmo_parameters(symbol):
@@ -124,13 +160,19 @@ def update_cosmo_parameters(symbol):
         mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
         mtrend_minima = find_peaks(mtrend_array, order=order_n, peak_type='min')
 
+        pclose_maxima = helper_find_price_by_peak(symbol_df, mtrend_maxima)
+        pclose_minima = helper_find_price_by_peak(symbol_df, mtrend_minima)
+
     else:
         utils.logger.info(f'{symbol} Not enough data')
         mtrend_maxima = []
         mtrend_minima = []
 
-    utils.logger.info(f'{symbol} MAX Peaks {mtrend_maxima}')
-    utils.logger.info(f'{symbol} MIN Peaks {mtrend_minima}')
+    utils.logger.info(f'{symbol} MAX mtrend peaks {mtrend_maxima}')
+    utils.logger.info(f'{symbol} MIN mtrend peaks {mtrend_minima}')
+
+    utils.logger.info(f'{symbol} MAX pclose peaks {pclose_maxima}')
+    utils.logger.info(f'{symbol} MIN pclose peaks {pclose_minima}')
 
     if (len(mtrend_maxima) > 0 ) and (len(mtrend_minima) > 0):
 
@@ -155,6 +197,7 @@ def update_cosmo_parameters(symbol):
                             'value' : symbol_parameter_item},
                             'sa-east-1')
 
+    return pclose_maxima, pclose_minima
 
 @utils.logger.catch
 def update_cosmo_dfs(symbol):
@@ -178,17 +221,15 @@ def update_cosmo_dfs(symbol):
 
 
 @utils.logger.catch
-def prepare_msg(call, symbol, mtrend, pclose, area, role):
+def prepare_msg(call, symbol, pclose, take_profit, stop_loss, role):
     """ Prepare Discord message """
     # pylint: disable=too-many-arguments
-    long_term = 'Up' if area > 0 else 'Down'
-    short_term = 'Up' if mtrend > 0 else 'Down'
 
     # Prepare message
     msg = f'{call} **{symbol}**\n'
-    msg += f'**Long  Trend**: {long_term}\n'
-    msg += f'**Short Trend**: {short_term}\n'
     msg += f'**Price**: ${pclose:,}\n'
+    msg += f'**Take Profit**: {take_profit}\n'
+    msg += f'**Stop Loss**: {stop_loss}\n'
     msg += f'<@&{role}>'
     return msg
 
@@ -241,12 +282,13 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 def run(symbol):
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
+    # pylint: disable=too-many-locals, line-too-long
 
     global COSMOBOT_CONFIG
 
     # Update Stuff
     update_cosmo_dfs(symbol)
-    update_cosmo_parameters(symbol)
+    pclose_max, pclose_min = update_cosmo_parameters(symbol)
 
     # check for a trading call
     symbol_cosmo_info = COSMO_SYMBOLS_DFS[symbol].iloc[-1]
@@ -259,8 +301,8 @@ def run(symbol):
         cosmo_time = cosmomixins.get_cosmobot_time()
 
         if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+            utils.logger.info(f'{symbol} 3rd check passed: Last call')
 
-            utils.logger.info(f"Call {cosmo_call} {symbol} sending MSG")
             # Get Cosmo Variables
             pclose = symbol_cosmo_info['pclose']
             ptrend = symbol_cosmo_info['ptrend']
@@ -270,41 +312,51 @@ def run(symbol):
             area = symbol_cosmo_info['area']
             area = float('{:.2e}'.format(area))
 
-            # Prepare message
-            msg = prepare_msg(cosmo_call, symbol, mtrend, pclose,area, DISCORD_COSMOBOT_ROLE)
-
-            if STAGING:
-                utils.logger.info(msg)
-
-            utils.discord_webhook_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
-
-            to_put = {  'week' : cosmo_time[0],
-                        'timestamp' : cosmo_time[4],
-                        'cosmo_call' : cosmo_call,
-                        'symbol' : symbol,
-                        'mtrend' : mtrend,
-                        'area'   : area,
-                        'strend' : strend,
-                        'ptrend' : ptrend,
-                        'pclose' : pclose,
-                        'pz_limit' : pz_limit,
-                        'pd_limit' : pd_limit }
-
-            item = json.loads(json.dumps(to_put), parse_float=Decimal)
-            table_name = 'mm_cosmobot_calls'
-
-            if STAGING:
-                table_name += '_staging'
+            # Get Take Profit & Stop Loss
+            result, take_profit, stop_loss = get_tp_sl(cosmo_call, pclose, pclose_max, pclose_min)
+            if result:
+                utils.logger.info(f'{symbol} 4th check passed pclose: {pclose} tp: {take_profit} sl: {stop_loss}')
 
 
-            dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                table_name,
-                                item,
-                                region='sa-east-1')
+                # Prepare message
+                msg = prepare_msg(cosmo_call, symbol, pclose, \
+                                    take_profit, stop_loss, DISCORD_COSMOBOT_ROLE)
+
+                if STAGING:
+                    utils.logger.info(msg)
+
+                utils.logger.info(f"{cosmo_call} {symbol} sending MSG")
+                utils.discord_webhook_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
+
+                to_put = {  'week'          : cosmo_time[0],
+                            'timestamp'     : cosmo_time[4],
+                            'cosmo_call'    : cosmo_call,
+                            'symbol'        : symbol,
+                            'mtrend'        : mtrend,
+                            'area'          : area,
+                            'strend'        : strend,
+                            'ptrend'        : ptrend,
+                            'pclose'        : pclose,
+                            'take_profit'   : take_profit,
+                            'stop_loss'     : stop_loss,
+                            'pz_limit' : pz_limit,
+                            'pd_limit' : pd_limit }
+
+                item = json.loads(json.dumps(to_put), parse_float=Decimal)
+                table_name = 'mm_cosmobot_calls'
+
+                if STAGING:
+                    table_name += '_staging'
+
+                utils.logger.info(f"{symbol} saving cosmo call in DB")
+                dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                                    table_name,
+                                    item,
+                                    region='sa-east-1')
 
 
 @utils.logger.catch
-def launch(event=None, context=None, threads_chunks=None):
+def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     """ Launch function """
     # pylint: disable=unused-argument, global-statement
 
@@ -332,6 +384,7 @@ def launch(event=None, context=None, threads_chunks=None):
     else:
         symbols = []
 
+    symbols = user_symbols if user_symbols else symbols
     # Start bot run() with threads
     if threads_chunks:
         symbols_chunks = utils.divide_list_chunks(symbols, threads_chunks)

@@ -124,7 +124,7 @@ def create_main_html(symbols, symbol_type):
 
 
 @utils.logger.catch
-def launch(symbol_type='stock'):
+def launch(symbol_type='stock', user_symbols=None):
     """ Launch fucntion """
     # pylint: disable=global-statement
     global COSMOBOT_CONFIG
@@ -142,6 +142,8 @@ def launch(symbol_type='stock'):
         symbols = COSMOBOT_CONFIG['crypto_symbols'] + COSMOBOT_CONFIG['stock_symbols']
     else:
         symbols = []
+
+    symbols = user_symbols if user_symbols else symbols
 
     for symbol in symbols:
 
