@@ -99,6 +99,7 @@ def find_peaks(initial_array, order=8888, peak_type='max'):
 
     return np.array(peaks)
 
+
 @utils.logger.catch
 def helper_find_price_by_peak(symbol_df, peaks):
     """ Find the price given a peak """
@@ -111,30 +112,21 @@ def helper_find_price_by_peak(symbol_df, peaks):
     return result
 
 @utils.logger.catch
-def get_tp_sl(trade, pclose, pclose_max, pclose_min):
+def get_tp_sl(pclose, pclose_max, pclose_min):
     """ Analyze take profits for short term and long term """
 
     result = False
-    take_profit, stop_loss = 0.0, 0.0
+    resistance, support = 0.0, 0.0
 
-    if trade == 'BUY':
-        take_profit = max(pclose_max)
-        stop_loss = min(pclose_min)
-        result = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
-                            <= take_profit
-        result = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
-                            >= stop_loss
+    resistance = max(pclose_max)
+    support = min(pclose_min)
+    result = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
+                        <= resistance
+    result = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
+                        >= support
 
-    elif trade == 'SELL':
-        take_profit = min(pclose_min)
-        stop_loss = max(pclose_max)
-        result = True and pclose - (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
-                            >= take_profit
-        result = True and pclose + (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
-                            <= stop_loss
+    return result, resistance, support
 
-
-    return result, take_profit, stop_loss
 
 @utils.logger.catch
 def update_cosmo_parameters(symbol):
@@ -199,6 +191,7 @@ def update_cosmo_parameters(symbol):
 
     return pclose_maxima, pclose_minima
 
+
 @utils.logger.catch
 def update_cosmo_dfs(symbol):
     """ Update local variables with current data """
@@ -221,16 +214,17 @@ def update_cosmo_dfs(symbol):
 
 
 @utils.logger.catch
-def prepare_msg(call, symbol, pclose, take_profit, stop_loss, role):
+def prepare_msg(call, symbol, pclose, resistance, support, role):
     """ Prepare Discord message """
     # pylint: disable=too-many-arguments
 
     # Prepare message
     msg = f'{call} **{symbol}**\n'
-    msg += f'**Price**: ${pclose:,}\n'
-    msg += f'**Take Profit**: {take_profit}\n'
-    msg += f'**Stop Loss**: {stop_loss}\n'
+    msg += f'**Price**: ${pclose:,.2f}\n'
+    msg += f'**Resistance**: ${resistance}\n'
+    msg += f'**Support**: ${support}\n'
     msg += f'<@&{role}>'
+
     return msg
 
 
@@ -313,14 +307,14 @@ def run(symbol):
             area = float('{:.2e}'.format(area))
 
             # Get Take Profit & Stop Loss
-            result, take_profit, stop_loss = get_tp_sl(cosmo_call, pclose, pclose_max, pclose_min)
-            if result:
-                utils.logger.info(f'{symbol} 4th check passed pclose: {pclose} tp: {take_profit} sl: {stop_loss}')
+            result, resistance, support = get_tp_sl(pclose, pclose_max, pclose_min)
 
+            if result:
+                utils.logger.info(f'{symbol} 4th check passed pclose: {pclose} tp: {resistance} sl: {support}')
 
                 # Prepare message
                 msg = prepare_msg(cosmo_call, symbol, pclose, \
-                                    take_profit, stop_loss, DISCORD_COSMOBOT_ROLE)
+                                    resistance, support, DISCORD_COSMOBOT_ROLE)
 
                 if STAGING:
                     utils.logger.info(msg)
@@ -337,8 +331,8 @@ def run(symbol):
                             'strend'        : strend,
                             'ptrend'        : ptrend,
                             'pclose'        : pclose,
-                            'take_profit'   : take_profit,
-                            'stop_loss'     : stop_loss,
+                            'resistance'   : resistance,
+                            'support'     : support,
                             'pz_limit' : pz_limit,
                             'pd_limit' : pd_limit }
 
