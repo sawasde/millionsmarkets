@@ -221,8 +221,8 @@ def prepare_msg(call, symbol, pclose, resistance, support, role):
     # Prepare message
     msg = f'{call} **{symbol}**\n'
     msg += f'**Price**: ${pclose:,.2f}\n'
-    msg += f'**Resistance**: ${resistance}\n'
-    msg += f'**Support**: ${support}\n'
+    msg += f'**Resistance**: ${resistance:,.2f}\n'
+    msg += f'**Support**: ${support:,.2f}\n'
     msg += f'<@&{role}>'
 
     return msg
