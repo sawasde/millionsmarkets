@@ -142,7 +142,7 @@ def integrate_area_below(df_inital='', yaxis='', dx_portion=1.0):
         if len(chunk) == 0:
             continue
 
-        area = np.trapz(chunk,dx=dx_portion)
+        area = int(np.trapz(chunk, dx=dx_portion))
         df_result.at[i, 'area'] = area
 
     return df_result.copy()
