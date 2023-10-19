@@ -4,24 +4,36 @@ provider "aws" {
 
 ### COSMOAGENT IAC
 ### COSMOAGENT ZIP
-resource "terraform_data" "cosmoagent_lambda_zip" {
+resource "null_resource" "cosmoagent_lambda_folder" {
+
   provisioner "local-exec" {
-    command = "zip -r -X cosmoagent.zip cosmoagent utils"
+    command = "mkdir ${self.triggers.dest_file}; cp -r utils ${self.triggers.dest_file}; cp -r cosmoagent ${self.triggers.dest_file}"
     interpreter = ["/bin/bash", "-c"]
   }
+
+  triggers = {
+    dest_file = "cosmoagent_temp"
+  }
+}
+
+data "archive_file" "cosmoagent_lambda_zip" {
+  type        = "zip"
+  source_dir  = null_resource.cosmoagent_lambda_folder.triggers.dest_file
+  output_path = "cosmoagent.zip"
+  depends_on  = [null_resource.cosmoagent_lambda_folder]
 }
 
 ### COSMOAGENT CRYPTO LAMBDA
 resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
 
-  filename      = "cosmoagent.zip"
+  filename         = data.archive_file.cosmoagent_lambda_zip.output_path
+  source_code_hash = data.archive_file.cosmoagent_lambda_zip.output_base64sha256
   function_name = "${terraform.workspace == "staging" ? "mm_cosmoagent_crypto_lambda_staging" : "mm_cosmoagent_crypto_lambda"}"
   role          = "${terraform.workspace == "staging" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn}"
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 60
-  source_code_hash = filebase64sha256("cosmoagent.zip")
 
   environment {
     variables = {
@@ -36,22 +48,19 @@ resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
   layers = [ data.aws_lambda_layer_version.binance_layer.arn,
              data.aws_lambda_layer_version.loguru_layer.arn,
              "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
-
-  depends_on = [ terraform_data.cosmoagent_lambda_zip ]
 }
 
 ### COSMOAGENT STOCK LAMBDA
 resource "aws_lambda_function" "cosmoagent_stock_lambda" {
 
-  filename      = "cosmoagent.zip"
+  filename         = data.archive_file.cosmoagent_lambda_zip.output_path
+  source_code_hash = data.archive_file.cosmoagent_lambda_zip.output_base64sha256
   function_name = "${terraform.workspace == "staging" ? "mm_cosmoagent_stock_lambda_staging" : "mm_cosmoagent_stock_lambda"}"
   role          = "${terraform.workspace == "staging" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn}"
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 60
-  source_code_hash = filebase64sha256("cosmoagent.zip")
-
 
   environment {
     variables = {
@@ -63,21 +72,19 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
 
   layers = [ data.aws_lambda_layer_version.loguru_layer.arn,
              "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
-
-  depends_on = [ terraform_data.cosmoagent_lambda_zip ]
 }
 
 ### COSMOAGENT ETF LAMBDA
 resource "aws_lambda_function" "cosmoagent_etf_lambda" {
 
-  filename      = "cosmoagent.zip"
+  filename         = data.archive_file.cosmoagent_lambda_zip.output_path
+  source_code_hash = data.archive_file.cosmoagent_lambda_zip.output_base64sha256
   function_name = "${terraform.workspace == "staging" ? "mm_cosmoagent_etf_lambda_staging" : "mm_cosmoagent_etf_lambda"}"
   role          = "${terraform.workspace == "staging" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn}"
   handler       = "cosmoagent.cosmoagent.launch"
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 60
-  source_code_hash = filebase64sha256("cosmoagent.zip")
 
   environment {
     variables = {
@@ -89,8 +96,6 @@ resource "aws_lambda_function" "cosmoagent_etf_lambda" {
 
   layers = [ data.aws_lambda_layer_version.loguru_layer.arn,
              "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
-
-  depends_on = [ terraform_data.cosmoagent_lambda_zip ]
 }
 
 
@@ -129,23 +134,38 @@ resource "aws_instance" "cosmobot_instance" {
 }
 
 ### MONITORING IAC
-resource "terraform_data" "monitoring_lambda_zip" {
+### MONITORING ZIP
+resource "null_resource" "monitoring_lambda_folder" {
+
   provisioner "local-exec" {
-    command = "zip -r -X monitoring.zip monitoring utils"
+    command = "mkdir ${self.triggers.dest_file}; cp -r utils ${self.triggers.dest_file}; cp -r monitoring ${self.triggers.dest_file}"
     interpreter = ["/bin/bash", "-c"]
+  }
+
+  triggers = {
+    dest_file = "monitoring_temp"
   }
 }
 
+data "archive_file" "monitoring_lambda_zip" {
+  type        = "zip"
+  source_dir  = null_resource.monitoring_lambda_folder.triggers.dest_file
+  output_path = "monitoring.zip"
+  depends_on  = [null_resource.monitoring_lambda_folder]
+}
+
+
 resource "aws_lambda_function" "monitoring_lambda" {
 
-  filename      = "monitoring.zip"
+  filename         = data.archive_file.monitoring_lambda_zip.output_path
+  source_code_hash = data.archive_file.monitoring_lambda_zip.output_base64sha256
   function_name = "${terraform.workspace == "staging" ? "mm_monitoring_lambda_staging" : "mm_monitoring_lambda"}"
   role          = "${terraform.workspace == "staging" ? data.aws_iam_role.mm_bots_role_staging.arn : data.aws_iam_role.mm_bots_role.arn}"
   handler       = "monitoring.monitoring.launch"
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 600
-  source_code_hash = filebase64sha256("monitoring.zip")
+
 
   environment {
     variables = {
@@ -158,6 +178,4 @@ resource "aws_lambda_function" "monitoring_lambda" {
 
   layers = [ data.aws_lambda_layer_version.loguru_layer.arn,
             "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
-
-  depends_on = [ terraform_data.monitoring_lambda_zip ]
 }
