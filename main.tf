@@ -6,7 +6,7 @@ provider "aws" {
 ### COSMOAGENT ZIP
 resource "terraform_data" "cosmoagent_lambda_zip" {
   provisioner "local-exec" {
-    command = "zip -r cosmoagent.zip cosmoagent utils"
+    command = "zip -r -X cosmoagent.zip cosmoagent utils"
     interpreter = ["/bin/bash", "-c"]
   }
 }
@@ -21,6 +21,7 @@ resource "aws_lambda_function" "cosmoagent_crypto_lambda" {
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 60
+  source_code_hash = filebase64sha256("cosmoagent.zip")
 
   environment {
     variables = {
@@ -49,6 +50,8 @@ resource "aws_lambda_function" "cosmoagent_stock_lambda" {
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 60
+  source_code_hash = filebase64sha256("cosmoagent.zip")
+
 
   environment {
     variables = {
@@ -74,6 +77,7 @@ resource "aws_lambda_function" "cosmoagent_etf_lambda" {
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 60
+  source_code_hash = filebase64sha256("cosmoagent.zip")
 
   environment {
     variables = {
@@ -127,7 +131,7 @@ resource "aws_instance" "cosmobot_instance" {
 ### MONITORING IAC
 resource "terraform_data" "monitoring_lambda_zip" {
   provisioner "local-exec" {
-    command = "zip -r monitoring.zip monitoring utils"
+    command = "zip -r -X monitoring.zip monitoring utils"
     interpreter = ["/bin/bash", "-c"]
   }
 }
@@ -141,6 +145,7 @@ resource "aws_lambda_function" "monitoring_lambda" {
   runtime       = "python3.9"
   memory_size   = 512
   timeout       = 600
+  source_code_hash = filebase64sha256("monitoring.zip")
 
   environment {
     variables = {
