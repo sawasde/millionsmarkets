@@ -71,10 +71,10 @@ def monitor_cosmobot(symbol_set, symbol):
 @utils.logger.catch
 def send_monitoring_report(bot):
     """ Send via Discord the monitoring report """
-    utils.logger.info(f'{bot} Sending Report')
+
     general_status = True
     msg = f'**{bot.upper()}  Status:**\n'
-
+    send_alert= False
 
     for symbol_set, symbol_info in MONITORING_RESULTS[bot].items():
         msg += f'**{symbol_set.upper()}:\n**'
@@ -88,10 +88,21 @@ def send_monitoring_report(bot):
         msg += '\n'
 
     msg += '\n'
-    # Alert @Role that something failed
-    msg += f'<@&{DISCORD_MONITORING_ROLE}>' if not general_status else ''
 
-    utils.discord_webhook_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
+    # Report all symbols each 6 hours
+    curr_hour = utils.date_now()[3]
+    if curr_hour % 6 == 0:
+        send_alert = True
+
+    # If general status is FAIL then sned message
+    # AND Alert @Role that something failed
+    if not general_status:
+        msg += f'<@&{DISCORD_MONITORING_ROLE}>'
+        send_alert = True
+
+    if send_alert:
+        utils.logger.info(f'{bot} Sending Alert')
+        utils.discord_webhook_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
 
 
 @utils.logger.catch
@@ -107,45 +118,51 @@ def run(bot, symbol_set, symbol):
     MONITORING_RESULTS[bot][symbol_set][symbol] = func(symbol_set, symbol)
 
 
-@utils.logger.catch
 def launch(event=None, context=None):
     """ Load configs and run once the agent """
     # pylint: disable=unused-argument, global-statement
 
     global CONFIG_TABLE_NAME, CA_SYMBOLS_TIMESTAMPS
-
     bots = MONITORING_RESULTS.keys()
 
-    for monitoring_bot in bots:
+    try:
 
-        if STAGING:
-            CONFIG_TABLE_NAME = f'mm_{monitoring_bot}_staging'
-        else:
-            CONFIG_TABLE_NAME = f'mm_{monitoring_bot}'
+        for monitoring_bot in bots:
 
-        if monitoring_bot == 'cosmoagent':
-            CA_SYMBOLS_TIMESTAMPS = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                        CONFIG_TABLE_NAME,
-                                                        'symbols_timestamps')
-        # Load config
-        bot_config = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                            CONFIG_TABLE_NAME)
+            if STAGING:
+                CONFIG_TABLE_NAME = f'mm_{monitoring_bot}_staging'
+            else:
+                CONFIG_TABLE_NAME = f'mm_{monitoring_bot}'
 
-        symbols_set = {'cryptos': bot_config['crypto_symbols'],
-                       'stocks':bot_config['stock_symbols']}
+            if monitoring_bot == 'cosmoagent':
+                CA_SYMBOLS_TIMESTAMPS = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+                                                            CONFIG_TABLE_NAME,
+                                                            'symbols_timestamps')
+            # Load config
+            bot_config = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
+                                                                CONFIG_TABLE_NAME)
 
-        # Start bot run() with threads
-        threads = []
+            symbols_set = {'cryptos': bot_config['crypto_symbols'],
+                        'stocks':bot_config['stock_symbols']}
 
-        for sym_set, symbols in symbols_set.items():
-            for symbol in symbols:
+            # Start bot run() with threads
+            threads = []
 
-                runner = threading.Thread(target=run, args=(monitoring_bot, sym_set, symbol,))
-                threads.append(runner)
-                runner.start()
+            for sym_set, symbols in symbols_set.items():
+                for symbol in symbols:
 
-            for thread in threads:
-                thread.join()
+                    runner = threading.Thread(target=run, args=(monitoring_bot, sym_set, symbol,))
+                    threads.append(runner)
+                    runner.start()
 
-        if len(MONITORING_RESULTS[monitoring_bot]) > 0:
-            send_monitoring_report(monitoring_bot)
+                for thread in threads:
+                    thread.join()
+
+            if len(MONITORING_RESULTS[monitoring_bot]) > 0:
+                send_monitoring_report(monitoring_bot)
+
+    except Exception as e:
+        msg = f'**BOT error**: {e}\n'
+        msg += f'<@&{DISCORD_MONITORING_ROLE}>'
+
+        utils.discord_webhook_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
