@@ -19,8 +19,8 @@ CONFIG_TABLE_NAME = None
 
 # Monitoring VARS
 CA_SYMBOLS_TIMESTAMPS = {}
-MONITORING_RESULTS = {  'cosmoagent' : {'cryptos': {}, 'stocks': {}},
-                        'cosmobot' : {'cryptos': {}, 'stocks': {}}}
+MONITORING_RESULTS = {  'cosmoagent' : {'cryptos': {}, 'stocks': {}, 'etfs': {}},
+                        'cosmobot' : {'cryptos': {}, 'stocks': {}, 'etfs': {}}}
 SYMBOLS_BASE_PATH = 'monitoring/assets/'
 CSV_ASSET_PATH = '{}{}.csv'
 
@@ -31,7 +31,7 @@ def monitor_cosmoagent(symbol_set, symbol):
         Use X minutes diff"""
 
     # In case stock market is off, return True
-    if symbol_set == 'stocks' and not utils.is_stock_market_hours():
+    if symbol_set in ('stocks', 'etfs') and not utils.is_stock_market_hours():
         return True
 
     if symbol not in CA_SYMBOLS_TIMESTAMPS.keys():
@@ -52,7 +52,7 @@ def monitor_cosmobot(symbol_set, symbol):
         Use X minutes diff"""
 
     # In case stock market is off, return True
-    if symbol_set == 'stocks' and not utils.is_stock_market_hours():
+    if symbol_set in ('stocks', 'etfs') and not utils.is_stock_market_hours():
         return True
 
     symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
@@ -143,7 +143,8 @@ def launch(event=None, context=None):
                                                                 CONFIG_TABLE_NAME)
 
             symbols_set = {'cryptos': bot_config['crypto_symbols'],
-                        'stocks':bot_config['stock_symbols']}
+                            'stocks':bot_config['stock_symbols'],
+                            'etfs':bot_config['etf_symbols']}
 
             # Start bot run() with threads
             threads = []

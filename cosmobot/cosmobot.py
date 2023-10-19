@@ -162,6 +162,8 @@ def update_cosmo_parameters(symbol):
         utils.logger.info(f'{symbol} Not enough data')
         mtrend_maxima = []
         mtrend_minima = []
+        pclose_maxima = []
+        pclose_minima = []
 
     utils.logger.info(f'{symbol} MAX mtrend peaks {mtrend_maxima}')
     utils.logger.info(f'{symbol} MIN mtrend peaks {mtrend_minima}')
@@ -380,6 +382,10 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['stock_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
+
+    elif SYMBOL_TYPE == 'ETF' and utils.is_stock_market_hours():
+        symbols = COSMOBOT_CONFIG['etf_symbols']
+        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL')
     else:
         symbols = []
 
