@@ -134,7 +134,7 @@ def run(symbol):
 
     if SYMBOL_TYPE == 'CRYPTO':
         symbol_cosmos_info = get_crypto_planet_trend(symbol)
-    elif SYMBOL_TYPE == 'STOCK':
+    elif SYMBOL_TYPE in ('STOCK', 'ETF'):
         symbol_cosmos_info = get_stock_planet_trend(symbol)
     else:
         symbol_cosmos_info = (None,)
@@ -173,6 +173,9 @@ def launch(event=None, context=None):
 
     elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['stock_symbols'], 10)
+
+    elif SYMBOL_TYPE == 'ETF' and utils.is_stock_market_hours():
+        symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['etf_symbols'], 10)
 
     else:
         if not utils.is_stock_market_hours():

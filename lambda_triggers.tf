@@ -11,6 +11,13 @@ resource "aws_cloudwatch_event_rule" "rate_2_minutes" {
   schedule_expression = "rate(2 minutes)"
 }
 
+resource "aws_cloudwatch_event_rule" "rate_4_minutes" {
+  name = "lambda_event_rule_rate_4_min"
+  description = "retry scheduled every 4 min"
+  schedule_expression = "rate(4 minutes)"
+}
+
+
 resource "aws_cloudwatch_event_rule" "rate_8_minutes" {
   name = "lambda_event_rule_rate_8_min"
   description = "retry scheduled every 8 min"
@@ -63,6 +70,21 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_stock" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.us_stock_market_2_minutes.arn
   statement_id  = "event_bridge_trigger_cosmoagent_stock"
+}
+
+# COSMOAGENT ETF TRIGGERS
+resource "aws_cloudwatch_event_target" "cosmoagent_etf_trigger" {
+  target_id = terraform.workspace == "staging" ? "mm_cosmoagent_etf_event_lambda_staging" : "mm_cosmoagent_etf_event_lambda"
+  arn = aws_lambda_function.cosmoagent_etf_lambda.arn
+  rule = aws_cloudwatch_event_rule.us_stock_market_2_minutes.name
+}
+
+resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_etf" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.cosmoagent_etf_lambda.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.us_stock_market_2_minutes.arn
+  statement_id  = "event_bridge_trigger_cosmoagent_etf"
 }
 
 # MONITORING TRIGGERS
