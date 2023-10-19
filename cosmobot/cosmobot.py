@@ -120,10 +120,13 @@ def get_tp_sl(pclose, pclose_max, pclose_min):
 
     resistance = max(pclose_max)
     support = min(pclose_min)
-    result = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
+
+    result_res = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
                         <= resistance
-    result = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
+    result_sup = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
                         >= support
+
+    result = result_res and result_sup
 
     return result, resistance, support
 
