@@ -120,10 +120,13 @@ def get_tp_sl(pclose, pclose_max, pclose_min):
 
     resistance = max(pclose_max)
     support = min(pclose_min)
-    result = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
+
+    result_res = True and pclose + (pclose * float(COSMOBOT_CONFIG['tp_rate'])) \
                         <= resistance
-    result = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
+    result_sup = True and pclose - (pclose * float(COSMOBOT_CONFIG['sl_rate'])) \
                         >= support
+
+    result = result_res and result_sup
 
     return result, resistance, support
 
@@ -218,8 +221,10 @@ def prepare_msg(call, symbol, pclose, resistance, support, role):
     """ Prepare Discord message """
     # pylint: disable=too-many-arguments
 
+    symbol_name = symbol
+
     # Prepare message
-    msg = f'{call} **{symbol}**\n'
+    msg = f'{call} **{symbol}** - {symbol_name}\n'
     msg += f'**Price**: ${pclose:,.2f}\n'
     msg += f'**Resistance**: ${resistance:,.2f}\n'
     msg += f'**Support**: ${support:,.2f}\n'
@@ -368,17 +373,19 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
         utils.logger.info('First launch: only loads config')
         return
 
-    if SYMBOL_TYPE == 'crypto':
+    if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'stock' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['stock_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
     else:
         symbols = []
 
+    # only run for user input symbols
     symbols = user_symbols if user_symbols else symbols
+
     # Start bot run() with threads
     if threads_chunks:
         symbols_chunks = utils.divide_list_chunks(symbols, threads_chunks)
