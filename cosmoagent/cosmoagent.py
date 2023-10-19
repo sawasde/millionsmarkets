@@ -134,7 +134,7 @@ def run(symbol):
 
     if SYMBOL_TYPE == 'CRYPTO':
         symbol_cosmos_info = get_crypto_planet_trend(symbol)
-    elif SYMBOL_TYPE == 'STOCK' or SYMBOL_TYPE == 'ETF':
+    elif SYMBOL_TYPE in ('STOCK', 'ETF'):
         symbol_cosmos_info = get_stock_planet_trend(symbol)
     else:
         symbol_cosmos_info = (None,)
