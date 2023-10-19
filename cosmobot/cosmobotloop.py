@@ -10,11 +10,11 @@ from utils import utils
 def run():
     """ Loop Run of cosmobot """
     utils.logger.info('Run Cosmobot on cryptos')
-    cbot.SYMBOL_TYPE = 'crypto'
+    cbot.SYMBOL_TYPE = 'CRYPTO'
     cbot.launch(event='set_log_path')
 
     utils.logger.info('Run Cosmobot on stocks')
-    cbot.SYMBOL_TYPE = 'stock'
+    cbot.SYMBOL_TYPE = 'STOCK'
     cbot.launch()
 
 
