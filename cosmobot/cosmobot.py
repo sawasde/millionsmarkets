@@ -221,13 +221,7 @@ def prepare_msg(call, symbol, pclose, resistance, support, role):
     """ Prepare Discord message """
     # pylint: disable=too-many-arguments
 
-    if SYMBOL_TYPE == 'CRYPTO':
-        symbol_name = COSMOBOT_CONFIG['crypto_symbols'][symbol]
-
-    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
-        symbol_name = COSMOBOT_CONFIG['stock_symbols'][symbol]
-    else:
-        symbol_name = ''
+    symbol_name = symbol
 
     # Prepare message
     msg = f'{call} **{symbol}** - {symbol_name}\n'
@@ -394,7 +388,7 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
 
     # Start bot run() with threads
     if threads_chunks:
-        symbols_chunks = utils.divide_list_chunks(list(symbols.keys()), threads_chunks)
+        symbols_chunks = utils.divide_list_chunks(symbols, threads_chunks)
         for chunk in symbols_chunks:
             threads = []
 
