@@ -4,23 +4,19 @@ provider "aws" {
 
 ### COSMOAGENT IAC
 ### COSMOAGENT ZIP
-resource "null_resource" "cosmoagent_lambda_folder" {
+resource "terraform_data" "cosmoagent_lambda_folder" {
 
   provisioner "local-exec" {
-    command = "mkdir ${self.triggers.dest_file}; cp -r utils ${self.triggers.dest_file}; cp -r cosmoagent ${self.triggers.dest_file}"
+    command = "mkdir z_ca_temp; cp -r utils z_ca_temp; cp -r cosmoagent z_ca_temp"
     interpreter = ["/bin/bash", "-c"]
-  }
-
-  triggers = {
-    dest_file = "cosmoagent_temp"
   }
 }
 
 data "archive_file" "cosmoagent_lambda_zip" {
   type        = "zip"
-  source_dir  = null_resource.cosmoagent_lambda_folder.triggers.dest_file
+  source_dir  = "z_ca_temp"
   output_path = "cosmoagent.zip"
-  depends_on  = [null_resource.cosmoagent_lambda_folder]
+  depends_on  = [terraform_data.cosmoagent_lambda_folder]
 }
 
 ### COSMOAGENT CRYPTO LAMBDA
@@ -135,23 +131,19 @@ resource "aws_instance" "cosmobot_instance" {
 
 ### MONITORING IAC
 ### MONITORING ZIP
-resource "null_resource" "monitoring_lambda_folder" {
+resource "terraform_data" "monitoring_lambda_folder" {
 
   provisioner "local-exec" {
-    command = "mkdir ${self.triggers.dest_file}; cp -r utils ${self.triggers.dest_file}; cp -r monitoring ${self.triggers.dest_file}"
+    command = "mkdir z_mon_temp; cp -r utils z_mon_temp; cp -r monitoring z_mon_temp"
     interpreter = ["/bin/bash", "-c"]
-  }
-
-  triggers = {
-    dest_file = "monitoring_temp"
   }
 }
 
 data "archive_file" "monitoring_lambda_zip" {
   type        = "zip"
-  source_dir  = null_resource.monitoring_lambda_folder.triggers.dest_file
+  source_dir  = "z_mon_temp"
   output_path = "monitoring.zip"
-  depends_on  = [null_resource.monitoring_lambda_folder]
+  depends_on  = [terraform_data.monitoring_lambda_folder]
 }
 
 
