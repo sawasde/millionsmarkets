@@ -48,4 +48,4 @@ jobs:
       run: terraform destroy --target aws_instance.cosmobot_instance --auto-approve --input=false
 
     - name: Terraform apply
-      run: terraform apply --auto-approve --input=false
+      run: terraform apply --auto-approve --input=false -replace="terraform_data.cosmoagent_lambda_zip"
