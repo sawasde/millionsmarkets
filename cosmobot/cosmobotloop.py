@@ -9,13 +9,18 @@ from utils import utils
 @utils.logger.catch
 def run():
     """ Loop Run of cosmobot """
-    utils.logger.info('Run Cosmobot on cryptos')
+    utils.logger.info('Run Cosmobot on CRYPTOS')
     cbot.SYMBOL_TYPE = 'CRYPTO'
     cbot.launch(event='set_log_path')
 
-    utils.logger.info('Run Cosmobot on stocks')
+    utils.logger.info('Run Cosmobot on STOCKS')
     cbot.SYMBOL_TYPE = 'STOCK'
     cbot.launch()
+
+    utils.logger.info('Run Cosmobot on ETFs')
+    cbot.SYMBOL_TYPE = 'ETF'
+    cbot.launch()
+
 
 
 @utils.logger.catch
