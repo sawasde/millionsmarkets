@@ -120,7 +120,7 @@ def run(bot, symbol_set, symbol):
 
 def launch(event=None, context=None):
     """ Load configs and run once the agent """
-    # pylint: disable=unused-argument, global-statement
+    # pylint: disable=unused-argument, global-statement, broad-except
 
     global CONFIG_TABLE_NAME, CA_SYMBOLS_TIMESTAMPS
     bots = MONITORING_RESULTS.keys()
@@ -161,8 +161,8 @@ def launch(event=None, context=None):
             if len(MONITORING_RESULTS[monitoring_bot]) > 0:
                 send_monitoring_report(monitoring_bot)
 
-    except Exception as e:
-        msg = f'**BOT error**: {e}\n'
+    except Exception as error:
+        msg = f'**BOT error**: {error}\n'
         msg += f'<@&{DISCORD_MONITORING_ROLE}>'
 
         utils.discord_webhook_send(DISCORD_MONITORING_HOOK_URL, 'MonitoringBOT', msg)
