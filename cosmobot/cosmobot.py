@@ -189,7 +189,7 @@ def update_cosmo_parameters(symbol):
         COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
     else:
-        utils.logger.info(f'{symbol} non compliant data')
+        utils.logger.error(f'{symbol} non compliant data')
 
         symbol_parameter_item['bull_mtrend']= -99
         symbol_parameter_item['bear_mtrend'] = 99
