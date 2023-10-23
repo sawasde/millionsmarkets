@@ -29,8 +29,8 @@ else:
 
 # cosmobot vars
 COSMOBOT_CONFIG = {}
-SYMBOLS_BASE_PATH = 'cosmobot/assets/'
-CSV_ASSET_PATH = '{}{}.csv'
+CHART_BASE_PATH = 'assets/'
+
 COSMO_SYMBOLS_PARAMETERS = {}
 COSMO_SYMBOLS_DFS = {}
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
@@ -205,14 +205,14 @@ def update_cosmo_parameters(symbol):
 
 
 @utils.logger.catch
-def update_cosmo_dfs(symbol):
+def update_cosmo_dfs(symbol, symbol_type):
     """ Update local variables with current data """
     # pylint: disable=global-variable-not-assigned
 
     global COSMO_SYMBOLS_DFS
     utils.logger.info(f'{symbol} Update cosmo DFs')
 
-    csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
+    csv_path = f'{CHART_BASE_PATH}{symbol_type}/{symbol}.csv'
     if FROM_LAMBDA:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
                                                            symbol, csv_path, 5, 521, False, STAGING)
@@ -287,7 +287,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 
 
 @utils.logger.catch
-def run(symbol):
+def run(symbol, symbol_type):
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
     # pylint: disable=too-many-locals, line-too-long
@@ -295,7 +295,7 @@ def run(symbol):
     global COSMOBOT_CONFIG
 
     # Update Stuff
-    update_cosmo_dfs(symbol)
+    update_cosmo_dfs(symbol, symbol_type)
     pclose_max, pclose_min = update_cosmo_parameters(symbol)
 
     # check for a trading call
@@ -406,7 +406,7 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
             threads = []
 
             for symbol in chunk:
-                runner = threading.Thread(target=run, args=(symbol,))
+                runner = threading.Thread(target=run, args=(symbol, SYMBOL_TYPE))
                 threads.append(runner)
                 runner.start()
 
@@ -415,4 +415,4 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     # No threading
     else:
         for symbol in symbols:
-            run(symbol)
+            run(symbol, SYMBOL_TYPE)

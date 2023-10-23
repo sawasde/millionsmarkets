@@ -1,22 +1,25 @@
+# AWS Provider
 provider "aws" {
   region = var.region
 }
 
-### COSMOAGENT IAC
-### COSMOAGENT ZIP
-resource "terraform_data" "cosmoagent_lambda_folder" {
-
-  provisioner "local-exec" {
-    command = "mkdir z_ca_temp; cp -r utils z_ca_temp; cp -r cosmoagent z_ca_temp"
-    interpreter = ["/bin/bash", "-c"]
-  }
+# LOCALS
+locals {
+  cosmoagent_files = fileset("${path.root}/src/", "cosmoagent/**")
+  cosmobot_files = fileset("${path.root}/src/", "cosmobot/**")
+  cosmoplotter_files = fileset("${path.root}/src/", "cosmoplotter/**")
+  monitoring_files = fileset("${path.root}/src/", "monitoring/**")
+  utils_files = fileset("${path.root}/src/", "utils/**")
+  lambda_layers = fileset("${path.root}/src/", "lambda-layers/**")
 }
 
+### COSMOAGENT IAC
+### COSMOAGENT ZIP
 data "archive_file" "cosmoagent_lambda_zip" {
   type        = "zip"
-  source_dir  = "z_ca_temp"
+  source_dir  = "src"
   output_path = "cosmoagent.zip"
-  depends_on  = [terraform_data.cosmoagent_lambda_folder]
+  excludes = setunion(local.cosmobot_files, local.cosmoplotter_files, local.monitoring_files, local.lambda_layers)
 }
 
 ### COSMOAGENT CRYPTO LAMBDA
@@ -102,7 +105,7 @@ resource "aws_iam_instance_profile" "cosmobot_ec2_profile" {
 }
 
 data "template_file" "cosmobot_user_data" {
-  template = "${file("cosmobot/setup.sh")}"
+  template = "${file("src/cosmobot/setup.sh")}"
 
   vars = {
     TF_VAR_STAGING = var.STAGING
@@ -131,19 +134,11 @@ resource "aws_instance" "cosmobot_instance" {
 
 ### MONITORING IAC
 ### MONITORING ZIP
-resource "terraform_data" "monitoring_lambda_folder" {
-
-  provisioner "local-exec" {
-    command = "mkdir z_mon_temp; cp -r utils z_mon_temp; cp -r monitoring z_mon_temp"
-    interpreter = ["/bin/bash", "-c"]
-  }
-}
-
 data "archive_file" "monitoring_lambda_zip" {
   type        = "zip"
-  source_dir  = "z_mon_temp"
+  source_dir  = "src"
   output_path = "monitoring.zip"
-  depends_on  = [terraform_data.monitoring_lambda_folder]
+  excludes = setunion(local.cosmobot_files, local.cosmoplotter_files, local.cosmoagent_files, local.lambda_layers)
 }
 
 ### MONITORING LAMBDA

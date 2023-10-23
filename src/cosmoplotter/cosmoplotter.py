@@ -10,8 +10,9 @@ from utils import utils, dynamodb, cosmomixins, plotting
 
 # General vars
 COSMOBOT_CONFIG = {}
-CHART_BASE_PATH = 'cosmoplotter/assets/'
+CHART_BASE_PATH = 'assets/'
 TMS_TRESSHOLD_SEC = 260
+SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
 # AWS Dynamo
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
@@ -124,7 +125,7 @@ def create_main_html(symbols, symbol_type):
 
 
 @utils.logger.catch
-def launch(symbol_type='stock', user_symbols=None):
+def launch(user_symbols=None):
     """ Launch fucntion """
     # pylint: disable=global-statement
     global COSMOBOT_CONFIG
@@ -134,12 +135,12 @@ def launch(symbol_type='stock', user_symbols=None):
 
     #Start bot run() with threads
     threads = []
-    if symbol_type == 'crypto':
+    if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
-    elif symbol_type == 'stock':
+    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['stock_symbols']
-    elif symbol_type == 'both':
-        symbols = COSMOBOT_CONFIG['crypto_symbols'] + COSMOBOT_CONFIG['stock_symbols']
+    elif SYMBOL_TYPE == 'ETF' and utils.is_stock_market_hours():
+        symbols = COSMOBOT_CONFIG['etf_symbols']
     else:
         symbols = []
 
@@ -147,7 +148,7 @@ def launch(symbol_type='stock', user_symbols=None):
 
     for symbol in symbols:
 
-        runner = threading.Thread(target=run, args=(symbol,[31],symbol_type,))
+        runner = threading.Thread(target=run, args=(symbol,[31], SYMBOL_TYPE,))
         threads.append(runner)
         runner.start()
         time.sleep(0.3)
@@ -155,4 +156,4 @@ def launch(symbol_type='stock', user_symbols=None):
     for thread in threads:
         thread.join()
 
-    create_main_html(symbols, symbol_type)
+    create_main_html(symbols, SYMBOL_TYPE)

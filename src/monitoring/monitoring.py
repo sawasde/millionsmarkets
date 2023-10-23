@@ -21,8 +21,6 @@ CONFIG_TABLE_NAME = None
 CA_SYMBOLS_TIMESTAMPS = {}
 MONITORING_RESULTS = {  'cosmoagent' : {'cryptos': {}, 'stocks': {}, 'etfs': {}},
                         'cosmobot' : {'cryptos': {}, 'stocks': {}, 'etfs': {}}}
-SYMBOLS_BASE_PATH = 'monitoring/assets/'
-CSV_ASSET_PATH = '{}{}.csv'
 
 
 @utils.logger.catch
@@ -71,6 +69,8 @@ def monitor_cosmobot(symbol_set, symbol):
 @utils.logger.catch
 def send_monitoring_report(bot):
     """ Send via Discord the monitoring report """
+
+    utils.logger.info(f'{bot} Evaluating to send report')
 
     general_status = True
     msg = f'**{bot.upper()}  Status:**\n'
