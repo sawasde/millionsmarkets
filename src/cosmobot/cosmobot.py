@@ -234,7 +234,14 @@ def prepare_msg(call, symbol, pclose, resistance, support, role):
 
     # Prepare message
     msg = f'{call} **{symbol}** - {symbol_name}\n'
-    msg += f'**Price**: ${pclose:,.2f}\n'
+
+    # Float Price for crypto currencies 0.XXXXXX
+    if SYMBOL_TYPE == 'CRYPTO' and 'USD' not in symbol:
+        msg += f'**Price**: ${pclose:,.5f}\n'
+    else:
+        # Normal Price for USD symbols based
+        msg += f'**Price**: ${pclose:,.2f}\n'
+
     msg += f'**Resistance**: ${resistance:,.2f}\n'
     msg += f'**Support**: ${support:,.2f}\n'
     msg += f'<@&{role}>'
