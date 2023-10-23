@@ -31,7 +31,7 @@ def launch():
     cbot.launch(event='first_launch')
 
     cron_expr = cbot.COSMOBOT_CONFIG['cron_expression']
-    python_cmd = 'from cosmobot import cosmobotloop as cbl; cbl.run()'
+    python_cmd = 'from src.cosmobot import cosmobotloop as cbl; cbl.run()'
     command = f"cd /millionsmarkets && sudo python3 -c '{python_cmd}'"
     user = 'root'
     cron_file = '/etc/crontab'

@@ -50,6 +50,4 @@ jobs:
 
     - name: Terraform apply
       run: |
-            terraform apply --auto-approve --input=false \
-                            --replace="terraform_data.cosmoagent_lambda_folder" \
-                            --replace="terraform_data.monitoring_lambda_folder"
+            terraform apply --auto-approve --input=false
