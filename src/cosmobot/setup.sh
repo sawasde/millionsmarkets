@@ -53,4 +53,4 @@ sudo sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/millionsmarkets/logs_config.json -s
 
 echo "[+] Create Cron JOB" >> "${LOGS_FILENAME}"
-sudo python3 -c "from cosmobot import cosmobotloop as cpl; cpl.launch()"
+sudo python3 -c "from src.cosmobot import cosmobotloop as cpl; cpl.launch()"
