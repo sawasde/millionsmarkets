@@ -94,7 +94,6 @@ resource "aws_lambda_function" "cosmoagent_etf_lambda" {
              "arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python39:8" ] # AWS Pandas
 }
 
-
 ### COSMO BOT IAC
 ### COSMOBOT CRYPTO & STOCK EC2
 resource "aws_iam_instance_profile" "cosmobot_ec2_profile" {
@@ -147,7 +146,7 @@ data "archive_file" "monitoring_lambda_zip" {
   depends_on  = [terraform_data.monitoring_lambda_folder]
 }
 
-
+### MONITORING LAMBDA
 resource "aws_lambda_function" "monitoring_lambda" {
 
   filename         = data.archive_file.monitoring_lambda_zip.output_path

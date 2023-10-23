@@ -165,13 +165,16 @@ def update_cosmo_parameters(symbol):
         pclose_maxima = []
         pclose_minima = []
 
-    utils.logger.info(f'{symbol} MAX mtrend peaks {mtrend_maxima}')
-    utils.logger.info(f'{symbol} MIN mtrend peaks {mtrend_minima}')
-
-    utils.logger.info(f'{symbol} MAX pclose peaks {pclose_maxima}')
-    utils.logger.info(f'{symbol} MIN pclose peaks {pclose_minima}')
+    # Update Timestamp
+    symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
 
     if (len(mtrend_maxima) > 0 ) and (len(mtrend_minima) > 0):
+
+        utils.logger.info(f'{symbol} MAX mtrend peaks {mtrend_maxima}')
+        utils.logger.info(f'{symbol} MIN mtrend peaks {mtrend_minima}')
+
+        utils.logger.info(f'{symbol} MAX pclose peaks {pclose_maxima}')
+        utils.logger.info(f'{symbol} MIN pclose peaks {pclose_minima}')
 
         maxima_mean = mtrend_maxima.mean()
         minima_mean = mtrend_minima.mean()
@@ -179,20 +182,24 @@ def update_cosmo_parameters(symbol):
         symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
         symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
 
-        # Update Timestamp
-        symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
-
         # Log parameters
         utils.logger.info(f'{symbol} parameters max: {maxima_mean} min {minima_mean}')
+
         # Put it on memory
         COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
-        # Put it on dynamo
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            CONFIG_TABLE_NAME,
-                            {'feature' : f'{symbol}_parameters',
-                            'value' : symbol_parameter_item},
-                            'sa-east-1')
+    else:
+        utils.logger.error(f'{symbol} non compliant data')
+
+        symbol_parameter_item['bull_mtrend']= -99
+        symbol_parameter_item['bear_mtrend'] = 99
+
+    # Put it on dynamo
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        CONFIG_TABLE_NAME,
+                        {'feature' : f'{symbol}_parameters',
+                        'value' : symbol_parameter_item},
+                        'sa-east-1')
 
     return pclose_maxima, pclose_minima
 
