@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 import requests
-from src.utils import utils
+from utils import utils
 
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
