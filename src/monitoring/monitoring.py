@@ -18,9 +18,8 @@ AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
 CONFIG_TABLE_NAME = None
 
 # Monitoring VARS
-CA_SYMBOLS_TIMESTAMPS = {}
-MONITORING_RESULTS = {  'cosmoagent' : {'cryptos': {}, 'stocks': {}, 'etfs': {}},
-                        'cosmobot' : {'cryptos': {}, 'stocks': {}, 'etfs': {}}}
+MONITORING_RESULTS = {  'cosmoagent' : {'crypto': {}, 'stock': {}, 'etf': {}},
+                        'cosmobot' : {'crypto': {}, 'stock': {}, 'etf': {}}}
 
 
 @utils.logger.catch
@@ -28,14 +27,20 @@ def monitor_cosmoagent(symbol_set, symbol):
     """ Search for a cosmoagent historical symbol and compare the timestamp
         Use X minutes diff"""
 
+
     # In case stock market is off, return True
-    if symbol_set in ('stocks', 'etfs') and not utils.is_stock_market_hours():
+    if symbol_set in ('stock', 'etf') and not utils.is_stock_market_hours():
         return True
 
-    if symbol not in CA_SYMBOLS_TIMESTAMPS.keys():
+    # Get Symbol timstamps dict
+    ca_sym_tms = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION,
+                                                    CONFIG_TABLE_NAME,
+                                                    f'{symbol_set}_symbols_timestamps')
+
+    if symbol not in ca_sym_tms.keys():
         return False
 
-    now_tms = CA_SYMBOLS_TIMESTAMPS[symbol]
+    now_tms = ca_sym_tms[symbol]
     diff_tms = utils.date_ago_timestmp(minutes=10)
 
     if now_tms > diff_tms:
@@ -50,7 +55,7 @@ def monitor_cosmobot(symbol_set, symbol):
         Use X minutes diff"""
 
     # In case stock market is off, return True
-    if symbol_set in ('stocks', 'etfs') and not utils.is_stock_market_hours():
+    if symbol_set in ('stock', 'etf') and not utils.is_stock_market_hours():
         return True
 
     symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
@@ -122,7 +127,7 @@ def launch(event=None, context=None):
     """ Load configs and run once the agent """
     # pylint: disable=unused-argument, global-statement, broad-except
 
-    global CONFIG_TABLE_NAME, CA_SYMBOLS_TIMESTAMPS
+    global CONFIG_TABLE_NAME
     bots = MONITORING_RESULTS.keys()
 
     try:
@@ -134,17 +139,13 @@ def launch(event=None, context=None):
             else:
                 CONFIG_TABLE_NAME = f'mm_{monitoring_bot}'
 
-            if monitoring_bot == 'cosmoagent':
-                CA_SYMBOLS_TIMESTAMPS = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            CONFIG_TABLE_NAME,
-                                                            'symbols_timestamps')
             # Load config
             bot_config = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
                                                                 CONFIG_TABLE_NAME)
 
-            symbols_set = {'cryptos': bot_config['crypto_symbols'],
-                            'stocks':bot_config['stock_symbols'],
-                            'etfs':bot_config['etf_symbols']}
+            symbols_set = {'crypto': bot_config['crypto_symbols'],
+                            'stock':bot_config['stock_symbols'],
+                            'etf':bot_config['etf_symbols']}
 
             # Start bot run() with threads
             threads = []

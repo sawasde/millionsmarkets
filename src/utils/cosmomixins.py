@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 import pandas as pd
-from utils import utils, dynamodb
+from src.utils import utils, dynamodb
 
 MIN_DF_LEN = 1000
 
