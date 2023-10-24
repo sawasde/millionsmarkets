@@ -5,7 +5,7 @@ import os
 import time
 import threading
 # local imports
-from utils import utils, dynamodb, cosmomixins, plotting
+from utils import utils, dynamodb, cosmomixins, plotting, broker
 
 
 # General vars
@@ -137,9 +137,9 @@ def launch(user_symbols=None):
     threads = []
     if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
-    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'STOCK' and broker.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['stock_symbols']
-    elif SYMBOL_TYPE == 'ETF' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'ETF' and broker.is_stock_market_hours():
         symbols = COSMOBOT_CONFIG['etf_symbols']
     else:
         symbols = []

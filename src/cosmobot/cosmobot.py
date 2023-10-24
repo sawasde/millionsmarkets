@@ -8,7 +8,7 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 #import discord
-from utils import utils, dynamodb, cosmomixins
+from utils import utils, dynamodb, cosmomixins, broker
 
 
 #Staging
@@ -393,11 +393,11 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
         symbols = COSMOBOT_CONFIG['crypto_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'STOCK' and broker.us_stock_status():
         symbols = COSMOBOT_CONFIG['stock_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'ETF' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'ETF' and broker.us_stock_status():
         symbols = COSMOBOT_CONFIG['etf_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL')
     else:
