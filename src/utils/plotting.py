@@ -5,7 +5,7 @@ import gc
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import mpld3
-from utils import utils
+from src.utils import utils
 
 
 @utils.logger.catch

@@ -26,7 +26,8 @@ if STAGING:
     CONFIG_TABLE_NAME = 'mm_cosmoagent_staging'
 else:
     CONFIG_TABLE_NAME = 'mm_cosmoagent'
-SYMBOLS_TIMESTAMPS_FEATURE = 'symbols_timestamps'
+
+SYMBOLS_TIMESTAMPS_FEATURE = f'{SYMBOL_TYPE.lower()}_symbols_timestamps'
 
 @utils.logger.catch
 def put_symbols_timestamps():
