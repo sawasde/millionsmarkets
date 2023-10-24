@@ -372,7 +372,7 @@ def run(symbol, symbol_type):
 @utils.logger.catch
 def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     """ Launch function """
-    # pylint: disable=unused-argument, global-statement
+    # pylint: disable=unused-argument, global-statement, too-many-branches
 
     global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL, US_MARKET_STATUS
 
