@@ -4,7 +4,7 @@
 import os
 import boto3
 from boto3.dynamodb.conditions import Key
-from src.utils import utils
+from utils import utils
 
 @utils.logger.catch
 def load_feature_value_config(dyn_session, table, value='config'):

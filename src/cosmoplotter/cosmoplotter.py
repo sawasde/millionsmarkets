@@ -8,12 +8,6 @@ import threading
 from utils import utils, dynamodb, cosmomixins, plotting, broker
 
 
-# General vars
-COSMOBOT_CONFIG = {}
-CHART_BASE_PATH = 'assets/'
-TMS_TRESSHOLD_SEC = 260
-SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
-
 # AWS Dynamo
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 AWS_DYNAMO_SESSION = dynamodb.create_session()
@@ -23,7 +17,12 @@ if STAGING:
 else:
     TABLE_NAME = 'mm_cosmobot'
 
-
+# Cosmoplotter vars
+COSMOBOT_CONFIG = {}
+CHART_BASE_PATH = 'assets/'
+TMS_TRESSHOLD_SEC = 260
+SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
+US_MARKET_STATUS = True
 
 @utils.logger.catch
 def plotter(symbol, df_initial, day, symbol_type):
@@ -128,20 +127,27 @@ def create_main_html(symbols, symbol_type):
 def launch(user_symbols=None):
     """ Launch fucntion """
     # pylint: disable=global-statement
-    global COSMOBOT_CONFIG
+    global COSMOBOT_CONFIG, US_MARKET_STATUS
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME)
 
     #Start bot run() with threads
     threads = []
+    # Get Market Status
+    US_MARKET_STATUS = broker.us_market_status()
+
     if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
-    elif SYMBOL_TYPE == 'STOCK' and broker.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
         symbols = COSMOBOT_CONFIG['stock_symbols']
-    elif SYMBOL_TYPE == 'ETF' and broker.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
         symbols = COSMOBOT_CONFIG['etf_symbols']
     else:
+        if not US_MARKET_STATUS:
+            utils.logger.info('US Market close')
+        else:
+            utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
         symbols = []
 
     symbols = user_symbols if user_symbols else symbols

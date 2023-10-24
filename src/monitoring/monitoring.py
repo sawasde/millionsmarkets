@@ -21,6 +21,7 @@ CONFIG_TABLE_NAME = None
 MONITORING_RESULTS = {  'cosmoagent' : {'crypto': {}, 'stock': {}, 'etf': {}},
                         'cosmobot' : {'crypto': {}, 'stock': {}, 'etf': {}}}
 
+US_MARKET_STATUS = True
 
 @utils.logger.catch
 def monitor_cosmoagent(symbol_set, symbol):
@@ -29,7 +30,7 @@ def monitor_cosmoagent(symbol_set, symbol):
 
 
     # In case stock market is off, return True
-    if symbol_set in ('stock', 'etf') and not broker.us_stock_status():
+    if symbol_set in ('stock', 'etf') and not US_MARKET_STATUS:
         return True
 
     # Get Symbol timstamps dict
@@ -55,7 +56,7 @@ def monitor_cosmobot(symbol_set, symbol):
         Use X minutes diff"""
 
     # In case stock market is off, return True
-    if symbol_set in ('stock', 'etf') and not broker.us_stock_status():
+    if symbol_set in ('stock', 'etf') and not US_MARKET_STATUS:
         return True
 
     symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
@@ -127,10 +128,12 @@ def launch(event=None, context=None):
     """ Load configs and run once the agent """
     # pylint: disable=unused-argument, global-statement, broad-except
 
-    global CONFIG_TABLE_NAME
+    global CONFIG_TABLE_NAME, US_MARKET_STATUS
     bots = MONITORING_RESULTS.keys()
 
     try:
+        # Get Market Status
+        US_MARKET_STATUS = broker.us_market_status()
 
         for monitoring_bot in bots:
 

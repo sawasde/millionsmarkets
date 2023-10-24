@@ -30,11 +30,10 @@ else:
 # cosmobot vars
 COSMOBOT_CONFIG = {}
 CHART_BASE_PATH = 'assets/'
-
 COSMO_SYMBOLS_PARAMETERS = {}
 COSMO_SYMBOLS_DFS = {}
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
-
+US_MARKET_STATUS = True
 
 @utils.logger.catch
 def check_cosmo_call(symbol, mtrend):
@@ -373,9 +372,9 @@ def run(symbol, symbol_type):
 @utils.logger.catch
 def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     """ Launch function """
-    # pylint: disable=unused-argument, global-statement
+    # pylint: disable=unused-argument, global-statement, too-many-branches
 
-    global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL
+    global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL, US_MARKET_STATUS
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
@@ -389,18 +388,25 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
         utils.logger.info('First launch: only loads config')
         return
 
+    # Get Market Status
+    US_MARKET_STATUS = broker.us_market_status()
+
     if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'STOCK' and broker.us_stock_status():
+    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
         symbols = COSMOBOT_CONFIG['stock_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'ETF' and broker.us_stock_status():
+    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
         symbols = COSMOBOT_CONFIG['etf_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL')
     else:
+        if not US_MARKET_STATUS:
+            utils.logger.info('US Market close')
+        else:
+            utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
         symbols = []
 
     # only run for user input symbols

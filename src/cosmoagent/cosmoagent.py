@@ -19,6 +19,7 @@ COSMOAGENT_CONFIG = {}
 SYMBOLS_TIMESTAMPS = {}
 FROM_LAMBDA = bool(int(os.getenv('TF_VAR_FROM_LAMBDA')))
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
+US_MARKET_STATUS = True
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
@@ -148,7 +149,7 @@ def run(symbol):
 def launch(event=None, context=None):
     """ Load configs and run once the agent"""
     # pylint: disable=unused-argument, global-statement
-    global COSMOAGENT_CONFIG, SYMBOLS_TIMESTAMPS
+    global COSMOAGENT_CONFIG, SYMBOLS_TIMESTAMPS, US_MARKET_STATUS
     # Load config
     COSMOAGENT_CONFIG = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
                                                             CONFIG_TABLE_NAME)
@@ -168,18 +169,21 @@ def launch(event=None, context=None):
     # Start bot run() with threads
     threads = []
 
+    # Get Market Status
+    US_MARKET_STATUS = broker.us_market_status()
+
     if SYMBOL_TYPE == 'CRYPTO':
         # Use threading but be careful to not impact binance rate limit: max 20 req/s
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['crypto_symbols'], 10)
 
-    elif SYMBOL_TYPE == 'STOCK' and broker.us_stock_status():
+    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['stock_symbols'], 10)
 
-    elif SYMBOL_TYPE == 'ETF' and broker.us_stock_status():
+    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['etf_symbols'], 10)
 
     else:
-        if not broker.us_stock_status():
+        if not US_MARKET_STATUS:
             utils.logger.info('US Market close')
         else:
             utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')

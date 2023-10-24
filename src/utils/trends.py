@@ -1,7 +1,7 @@
 """ Custom Indicators module """
 # pylint: disable=no-name-in-module, import-error
 
-from src.utils import utils
+from utils import utils
 
 @utils.logger.catch
 def planets_volume(df_inital, return_decimal=5, trend_type='pure'):
