@@ -126,11 +126,11 @@ def yfinance_get_chart_data(symbol, period='1d', interval='1d', timeout=30):
 
 
 @utils.logger.catch
-def us_stock_status():
+def us_market_status():
     """ Check US market Status """
 
     # Check for market hours
-    if not us_stock_market_hours():
+    if not us_market_time():
         return False
 
     # Check for holidays
@@ -144,7 +144,7 @@ def us_stock_status():
     return False
 
 @utils.logger.catch
-def us_stock_market_hours():
+def us_market_time():
     """ return True if we're in stock market hours """
 
     now = utils.date_now(use_tuple=True, tmz='US/Eastern')
