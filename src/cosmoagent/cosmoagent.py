@@ -172,14 +172,14 @@ def launch(event=None, context=None):
         # Use threading but be careful to not impact binance rate limit: max 20 req/s
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['crypto_symbols'], 10)
 
-    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'STOCK' and broker.us_stock_status():
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['stock_symbols'], 10)
 
-    elif SYMBOL_TYPE == 'ETF' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'ETF' and broker.us_stock_status():
         symbols_chunks = utils.divide_list_chunks(COSMOAGENT_CONFIG['etf_symbols'], 10)
 
     else:
-        if not utils.is_stock_market_hours():
+        if not broker.us_stock_status():
             utils.logger.info('US Market close')
         else:
             utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')

@@ -3,7 +3,7 @@
 
 import os
 import threading
-from utils import utils, dynamodb
+from utils import utils, dynamodb, broker
 
 #Staging
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
@@ -29,7 +29,7 @@ def monitor_cosmoagent(symbol_set, symbol):
 
 
     # In case stock market is off, return True
-    if symbol_set in ('stock', 'etf') and not utils.is_stock_market_hours():
+    if symbol_set in ('stock', 'etf') and not broker.us_stock_status():
         return True
 
     # Get Symbol timstamps dict
@@ -55,7 +55,7 @@ def monitor_cosmobot(symbol_set, symbol):
         Use X minutes diff"""
 
     # In case stock market is off, return True
-    if symbol_set in ('stock', 'etf') and not utils.is_stock_market_hours():
+    if symbol_set in ('stock', 'etf') and not broker.us_stock_status():
         return True
 
     symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
