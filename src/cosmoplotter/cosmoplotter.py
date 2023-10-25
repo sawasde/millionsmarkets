@@ -5,13 +5,8 @@ import os
 import time
 import threading
 # local imports
-from utils import utils, dynamodb, cosmomixins, plotting
+from utils import utils, dynamodb, cosmomixins, plotting, broker
 
-
-# General vars
-COSMOBOT_CONFIG = {}
-CHART_BASE_PATH = 'cosmoplotter/assets/'
-TMS_TRESSHOLD_SEC = 260
 
 # AWS Dynamo
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
@@ -22,7 +17,12 @@ if STAGING:
 else:
     TABLE_NAME = 'mm_cosmobot'
 
-
+# Cosmoplotter vars
+COSMOBOT_CONFIG = {}
+CHART_BASE_PATH = 'assets/'
+TMS_TRESSHOLD_SEC = 260
+SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
+US_MARKET_STATUS = True
 
 @utils.logger.catch
 def plotter(symbol, df_initial, day, symbol_type):
@@ -124,30 +124,37 @@ def create_main_html(symbols, symbol_type):
 
 
 @utils.logger.catch
-def launch(symbol_type='stock', user_symbols=None):
+def launch(user_symbols=None):
     """ Launch fucntion """
     # pylint: disable=global-statement
-    global COSMOBOT_CONFIG
+    global COSMOBOT_CONFIG, US_MARKET_STATUS
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION, TABLE_NAME)
 
     #Start bot run() with threads
     threads = []
-    if symbol_type == 'crypto':
+    # Get Market Status
+    US_MARKET_STATUS = broker.us_market_status()
+
+    if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
-    elif symbol_type == 'stock':
+    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
         symbols = COSMOBOT_CONFIG['stock_symbols']
-    elif symbol_type == 'both':
-        symbols = COSMOBOT_CONFIG['crypto_symbols'] + COSMOBOT_CONFIG['stock_symbols']
+    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
+        symbols = COSMOBOT_CONFIG['etf_symbols']
     else:
+        if not US_MARKET_STATUS:
+            utils.logger.info('US Market close')
+        else:
+            utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
         symbols = []
 
     symbols = user_symbols if user_symbols else symbols
 
     for symbol in symbols:
 
-        runner = threading.Thread(target=run, args=(symbol,[31],symbol_type,))
+        runner = threading.Thread(target=run, args=(symbol,[31], SYMBOL_TYPE,))
         threads.append(runner)
         runner.start()
         time.sleep(0.3)
@@ -155,4 +162,4 @@ def launch(symbol_type='stock', user_symbols=None):
     for thread in threads:
         thread.join()
 
-    create_main_html(symbols, symbol_type)
+    create_main_html(symbols, SYMBOL_TYPE)

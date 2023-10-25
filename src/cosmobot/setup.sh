@@ -4,6 +4,7 @@ echo "TF_VAR_STAGING=${TF_VAR_STAGING}" >> /etc/environment
 echo "TF_VAR_FROM_LAMBDA=${TF_VAR_FROM_LAMBDA}" >> /etc/environment
 echo "TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL=${TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL}" >> /etc/environment
 echo "TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL=${TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL}" >> /etc/environment
+echo "TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL=${TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL}" >> /etc/environment
 echo "TF_VAR_COSMOBOT_DISCORD_ROLE=${TF_VAR_COSMOBOT_DISCORD_ROLE}" >> /etc/environment
 
 echo "[+] Cloning project" >> "${LOGS_FILENAME}"
@@ -52,4 +53,4 @@ sudo sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/millionsmarkets/logs_config.json -s
 
 echo "[+] Create Cron JOB" >> "${LOGS_FILENAME}"
-sudo python3 -c "from cosmobot import cosmobotloop as cpl; cpl.launch()"
+sudo python3 -c "from src.cosmobot import cosmobotloop as cpl; cpl.launch()"

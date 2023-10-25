@@ -27,6 +27,10 @@ variable "COSMOBOT_DISCORD_STOCK_HOOK_URL" {
     type = string
 }
 
+variable "COSMOBOT_DISCORD_ETF_HOOK_URL" {
+    type = string
+}
+
 variable "MONITORING_DISCORD_HOOK_URL" {
     type = string
 }

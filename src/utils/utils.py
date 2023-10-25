@@ -180,25 +180,3 @@ def divide_list_chunks(lis, chunks):
 
     for i in range(0, len(lis), chunks):
         yield lis[i:i + chunks]
-
-@logger.catch
-def is_stock_market_hours():
-    """ return True if we're in stock market hours """
-
-    now = date_now(use_tuple=True, tmz='US/Eastern')
-    # y, m, d, h, minute, sec, wd, yd, i
-    hour = now[3]
-    minute = now[4]
-    wday = now[6]
-
-    if 0 <= wday <= 4:
-        # US stock open close hours
-        if hour <9 or hour > 16:
-            return False
-        # US stock ensure starting at 9:30 am
-        if hour == 9 and minute < 30:
-            return False
-
-        return True
-
-    return False

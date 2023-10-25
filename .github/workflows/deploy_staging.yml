@@ -19,6 +19,7 @@ jobs:
       TF_VAR_FROM_LAMBDA : ${{ vars.TF_VAR_FROM_LAMBDA }}
       TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL }}
       TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL }}
+      TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL : ${{ secrets.TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL }}
       TF_VAR_COSMOBOT_DISCORD_ROLE : ${{ vars.TF_VAR_COSMOBOT_DISCORD_ROLE }}
       TF_VAR_MONITORING_DISCORD_HOOK_URL : ${{ secrets.TF_VAR_MONITORING_DISCORD_HOOK_URL }}
       TF_VAR_MONITORING_DISCORD_ROLE : ${{ vars.TF_VAR_MONITORING_DISCORD_ROLE }}
@@ -48,4 +49,5 @@ jobs:
       run: terraform destroy --target aws_instance.cosmobot_instance --auto-approve --input=false
 
     - name: Terraform apply
-      run: terraform apply --auto-approve --input=false
+      run: |
+            terraform apply --auto-approve --input=false

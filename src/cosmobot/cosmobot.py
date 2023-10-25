@@ -8,7 +8,7 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 #import discord
-from utils import utils, dynamodb, cosmomixins
+from utils import utils, dynamodb, cosmomixins, broker
 
 
 #Staging
@@ -29,12 +29,11 @@ else:
 
 # cosmobot vars
 COSMOBOT_CONFIG = {}
-SYMBOLS_BASE_PATH = 'cosmobot/assets/'
-CSV_ASSET_PATH = '{}{}.csv'
+CHART_BASE_PATH = 'assets/'
 COSMO_SYMBOLS_PARAMETERS = {}
 COSMO_SYMBOLS_DFS = {}
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
-
+US_MARKET_STATUS = True
 
 @utils.logger.catch
 def check_cosmo_call(symbol, mtrend):
@@ -162,14 +161,19 @@ def update_cosmo_parameters(symbol):
         utils.logger.info(f'{symbol} Not enough data')
         mtrend_maxima = []
         mtrend_minima = []
+        pclose_maxima = []
+        pclose_minima = []
 
-    utils.logger.info(f'{symbol} MAX mtrend peaks {mtrend_maxima}')
-    utils.logger.info(f'{symbol} MIN mtrend peaks {mtrend_minima}')
-
-    utils.logger.info(f'{symbol} MAX pclose peaks {pclose_maxima}')
-    utils.logger.info(f'{symbol} MIN pclose peaks {pclose_minima}')
+    # Update Timestamp
+    symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
 
     if (len(mtrend_maxima) > 0 ) and (len(mtrend_minima) > 0):
+
+        utils.logger.info(f'{symbol} MAX mtrend peaks {mtrend_maxima}')
+        utils.logger.info(f'{symbol} MIN mtrend peaks {mtrend_minima}')
+
+        utils.logger.info(f'{symbol} MAX pclose peaks {pclose_maxima}')
+        utils.logger.info(f'{symbol} MIN pclose peaks {pclose_minima}')
 
         maxima_mean = mtrend_maxima.mean()
         minima_mean = mtrend_minima.mean()
@@ -177,33 +181,37 @@ def update_cosmo_parameters(symbol):
         symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
         symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
 
-        # Update Timestamp
-        symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
-
         # Log parameters
         utils.logger.info(f'{symbol} parameters max: {maxima_mean} min {minima_mean}')
+
         # Put it on memory
         COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
-        # Put it on dynamo
-        dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                            CONFIG_TABLE_NAME,
-                            {'feature' : f'{symbol}_parameters',
-                            'value' : symbol_parameter_item},
-                            'sa-east-1')
+    else:
+        utils.logger.error(f'{symbol} non compliant data')
+
+        symbol_parameter_item['bull_mtrend']= -99
+        symbol_parameter_item['bear_mtrend'] = 99
+
+    # Put it on dynamo
+    dynamodb.put_item(  AWS_DYNAMO_SESSION,
+                        CONFIG_TABLE_NAME,
+                        {'feature' : f'{symbol}_parameters',
+                        'value' : symbol_parameter_item},
+                        'sa-east-1')
 
     return pclose_maxima, pclose_minima
 
 
 @utils.logger.catch
-def update_cosmo_dfs(symbol):
+def update_cosmo_dfs(symbol, symbol_type):
     """ Update local variables with current data """
     # pylint: disable=global-variable-not-assigned
 
     global COSMO_SYMBOLS_DFS
     utils.logger.info(f'{symbol} Update cosmo DFs')
 
-    csv_path = CSV_ASSET_PATH.format(SYMBOLS_BASE_PATH, symbol)
+    csv_path = f'{CHART_BASE_PATH}{symbol_type}/{symbol}.csv'
     if FROM_LAMBDA:
         symbol_df = cosmomixins.get_resource_optimized_dfs(AWS_DYNAMO_SESSION,
                                                            symbol, csv_path, 5, 521, False, STAGING)
@@ -225,7 +233,14 @@ def prepare_msg(call, symbol, pclose, resistance, support, role):
 
     # Prepare message
     msg = f'{call} **{symbol}** - {symbol_name}\n'
-    msg += f'**Price**: ${pclose:,.2f}\n'
+
+    # Float Price for crypto currencies 0.XXXXXX
+    if SYMBOL_TYPE == 'CRYPTO' and 'USD' not in symbol:
+        msg += f'**Price**: ${pclose:,.5f}\n'
+    else:
+        # Normal Price for USD symbols based
+        msg += f'**Price**: ${pclose:,.2f}\n'
+
     msg += f'**Resistance**: ${resistance:,.2f}\n'
     msg += f'**Support**: ${support:,.2f}\n'
     msg += f'<@&{role}>'
@@ -278,7 +293,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 
 
 @utils.logger.catch
-def run(symbol):
+def run(symbol, symbol_type):
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
     # pylint: disable=too-many-locals, line-too-long
@@ -286,7 +301,7 @@ def run(symbol):
     global COSMOBOT_CONFIG
 
     # Update Stuff
-    update_cosmo_dfs(symbol)
+    update_cosmo_dfs(symbol, symbol_type)
     pclose_max, pclose_min = update_cosmo_parameters(symbol)
 
     # check for a trading call
@@ -357,9 +372,9 @@ def run(symbol):
 @utils.logger.catch
 def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     """ Launch function """
-    # pylint: disable=unused-argument, global-statement
+    # pylint: disable=unused-argument, global-statement, too-many-branches
 
-    global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL
+    global COSMOBOT_CONFIG, DISCORD_COSMOBOT_HOOK_URL, US_MARKET_STATUS
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
@@ -373,14 +388,25 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
         utils.logger.info('First launch: only loads config')
         return
 
+    # Get Market Status
+    US_MARKET_STATUS = broker.us_market_status()
+
     if SYMBOL_TYPE == 'CRYPTO':
         symbols = COSMOBOT_CONFIG['crypto_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'STOCK' and utils.is_stock_market_hours():
+    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
         symbols = COSMOBOT_CONFIG['stock_symbols']
         DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
+
+    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
+        symbols = COSMOBOT_CONFIG['etf_symbols']
+        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL')
     else:
+        if not US_MARKET_STATUS:
+            utils.logger.info('US Market close')
+        else:
+            utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
         symbols = []
 
     # only run for user input symbols
@@ -393,7 +419,7 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
             threads = []
 
             for symbol in chunk:
-                runner = threading.Thread(target=run, args=(symbol,))
+                runner = threading.Thread(target=run, args=(symbol, SYMBOL_TYPE))
                 threads.append(runner)
                 runner.start()
 
@@ -402,4 +428,4 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     # No threading
     else:
         for symbol in symbols:
-            run(symbol)
+            run(symbol, SYMBOL_TYPE)
