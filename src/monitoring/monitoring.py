@@ -83,7 +83,8 @@ def send_monitoring_report(bot):
     send_alert= False
 
     for symbol_set, symbol_info in MONITORING_RESULTS[bot].items():
-        msg += f'**{symbol_set.upper()}:\n**'
+        msg += f'**{symbol_set.upper()} **'
+        msg += f'{len(symbol_info.keys())}\n'
 
         for symbol, status in symbol_info.items():
 
