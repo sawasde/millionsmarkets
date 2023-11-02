@@ -68,7 +68,7 @@ resource "aws_lambda_permission" "allow_eventbridge_cosmoagent_stock" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cosmoagent_stock_lambda.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.us_stock_market_2_minutes.arn
+  source_arn    = aws_cloudwatch_event_rule.us_stock_market_4_minutes.arn
   statement_id  = "event_bridge_trigger_cosmoagent_stock"
 }
 
