@@ -149,29 +149,42 @@ def integrate_area_below(df_inital='', yaxis='', dx_portion=1.0):
 
 
 @logger.catch
-def discord_webhook_send(url, username, content, embed=False, attemps=5):
+def discord_webhook_send(url, username, msg, embed=False, attemps=5):
     """ send messages using Discord webhook
             embed = {"description": "desc", "title": "embed title"}
     """
-    while attemps > 0:
-        data = {
-            'content': content,
-            'username': username,
+    results, contents = [], []
+    msg_size = len(msg)
+    max_msg = 2000
+
+    if msg_size > max_msg:
+        contents = [msg[i:i + max_msg] for i in range(0, msg_size, max_msg)]
+    else:
+        contents = [msg]
+
+    for content in contents:
+        while attemps > 0:
+            data = {
+                'content': content,
+                'username': username,
+                }
+
+            if embed:
+                data['embeds'] = [ embed ]
+
+            headers = {
+                'Content-Type': 'application/json'
             }
 
-        if embed:
-            data['embeds'] = [ embed ]
+            result = requests.post(url, json=data, headers=headers, timeout=24)
 
-        headers = {
-            'Content-Type': 'application/json'
-        }
+            if 200 <= result.status_code < 300:
+                break
+            attemps -= 1
 
-        result = requests.post(url, json=data, headers=headers, timeout=24)
+            results.append(result)
 
-        if 200 <= result.status_code < 300:
-            break
-        attemps -= 1
-    return result
+    return results
 
 
 @logger.catch
