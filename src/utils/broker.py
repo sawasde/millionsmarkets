@@ -155,7 +155,7 @@ def us_market_time():
 
     if 0 <= wday <= 4:
         # US stock open close hours
-        if hour <9 or hour > 16:
+        if hour < 9 or hour >= 16:
             return False
         # US stock ensure starting at 9:30 am
         if hour == 9 and minute < 30:
