@@ -255,7 +255,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
     utils.logger.info(f'{symbol} Checking last calls')
     table_name = 'mm_cosmobot_calls'
     week = cosmo_time[0]
-    timestamp = utils.date_ago_timestmp(days=1)
+    timestamp = utils.date_ago_timestmp(days=3)
 
     if STAGING:
         table_name += '_staging'
