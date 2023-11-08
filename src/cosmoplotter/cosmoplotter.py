@@ -34,7 +34,7 @@ def plotter(symbol, df_initial, day, symbol_type):
     html_file_path_temp = f'{CHART_BASE_PATH}/{symbol_type}/{symbol}_{day}.html'
 
     plotting.plot_sublots(  df_initial=df_result,
-                            plot_features_dicts=[{'pclose':'g', 'pz_limit':'b'},
+                            plot_features_dicts=[{'pclose':'g'},
                                                 {'area':'r', 'zero_bound':'b'},
                                                 {'mtrend':'g', 'zero_bound':'b'},
                                                 ],
