@@ -304,7 +304,7 @@ def update_yf_symbols_table(symbols, symbol_type):
     remove_keys = ['longBusinessSummary', 'companyOfficers', 'uuid']
 
     # Update info between 600-630 AM
-    if True:#hour == 6 and minute <= 30:
+    if hour == 6 and minute <= 30:
 
         utils.logger.info(f'{symbol_type} Update symbol info')
         for symbol in symbols:
