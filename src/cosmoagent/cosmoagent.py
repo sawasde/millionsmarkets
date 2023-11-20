@@ -2,7 +2,6 @@
 # pylint: disable=no-name-in-module, import-error, R0801
 
 import os
-import json
 import time
 import threading
 from decimal import Decimal
@@ -66,19 +65,11 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
                 'pd_limit' : pd_limit,
                 'pz_limit' : pz_limit }
 
-    item = json.loads(json.dumps(to_put), parse_float=Decimal)
     table_name = f'mm_cosmobot_historical_{symbol}'
 
-    if STAGING:
-        table_name += '_staging'
-
-    dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        table_name,
-                        item,
-                        region='sa-east-1')
+    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, to_put, table_name, STAGING)
 
     SYMBOLS_TIMESTAMPS[symbol] = Decimal(cosmo_timestamp)
-
 
 
 def get_crypto_planet_trend(symbol):
