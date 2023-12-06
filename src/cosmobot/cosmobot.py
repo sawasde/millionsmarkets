@@ -194,11 +194,8 @@ def update_cosmo_parameters(symbol):
         symbol_parameter_item['bear_mtrend'] = 99
 
     # Put it on dynamo
-    dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        CONFIG_TABLE_NAME,
-                        {'feature' : f'{symbol}_parameters',
-                        'value' : symbol_parameter_item},
-                        'sa-east-1')
+    to_put = {'feature' : f'{symbol}_parameters', 'value' : symbol_parameter_item}
+    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, CONFIG_TABLE_NAME, to_put, STAGING)
 
     return pclose_maxima, pclose_minima
 
@@ -321,7 +318,7 @@ def update_yf_symbols_table(symbols, symbol_type):
             info['symbol_type'] = symbol_type
             info['timestamp'] = timestamp
 
-            dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, info, 'mm_symbols', STAGING)
+            dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, 'mm_symbols', info, STAGING)
 
 
 @utils.logger.catch
@@ -390,7 +387,7 @@ def run(symbol, symbol_type):
                             'pz_limit' : pz_limit,
                             'pd_limit' : pd_limit }
 
-                dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, to_put, 'mm_cosmobot_calls', STAGING)
+                dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, 'mm_cosmobot_calls', to_put, STAGING)
 
 
 @utils.logger.catch
