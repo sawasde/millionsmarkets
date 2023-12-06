@@ -2,8 +2,6 @@
 # pylint: disable=no-name-in-module, import-error
 
 import os
-import time
-import threading
 # local imports
 from utils import utils, dynamodb, cosmomixins
 
@@ -24,7 +22,6 @@ COSMOBOT_CONFIG = {}
 COSMOAGENT_CONFIG = {}
 CHART_BASE_PATH = 'assets/'
 SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
-US_MARKET_STATUS = True
 
 
 @utils.logger.catch
@@ -116,7 +113,7 @@ def update_cb_symbols(symbols_to_migrate):
 def launch():
     """ Launch function """
     # pylint: disable=global-statement
-    global COSMOBOT_CONFIG, COSMOAGENT_CONFIG, US_MARKET_STATUS
+    global COSMOBOT_CONFIG, COSMOAGENT_CONFIG
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION,
