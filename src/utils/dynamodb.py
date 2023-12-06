@@ -45,7 +45,7 @@ def get_item(dyn_session, table_name, key, region='sa-east-1'):
 
 
 @utils.logger.catch
-def put_item_from_dict(dyn_session, data, table_name, staging, region='sa-east-1'):
+def put_item_from_dict(dyn_session, table_name, data, staging, region='sa-east-1'):
     """ Put Item to table given a dict """
 
     item = json.loads(json.dumps(data), parse_float=Decimal)
@@ -56,7 +56,7 @@ def put_item_from_dict(dyn_session, data, table_name, staging, region='sa-east-1
     put_item(dyn_session,
              table_name,
              item,
-            region=region)
+             region=region)
 
 
 @utils.logger.catch

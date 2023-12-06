@@ -89,12 +89,10 @@ def send_monitoring_report(bot):
         for symbol, status in symbol_info.items():
 
             general_status = False if not status else general_status
-            msg += f'{symbol}: '
+            msg += f'{symbol} '
             msg += ':white_check_mark:' if status else ':x:'
             msg += '\t'
         msg += '\n'
-
-    msg += '\n'
 
     # Report all symbols each 6 hours
     curr_hour = utils.date_now()[3]
@@ -104,8 +102,10 @@ def send_monitoring_report(bot):
     # If general status is FAIL then sned message
     # AND Alert @Role that something failed
     if not general_status:
-        msg += f'<@&{DISCORD_MONITORING_ROLE}>'
+        msg += f'<@&{DISCORD_MONITORING_ROLE}>\n'
         send_alert = True
+
+    msg += '\n\n'
 
     if send_alert:
         utils.logger.info(f'{bot} Sending Alert')

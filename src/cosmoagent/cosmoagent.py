@@ -34,11 +34,12 @@ def put_symbols_timestamps():
     """ Put symbols timestamps for monitoring purposes """
     utils.logger.info('Put Symbols timestamps')
 
-    dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        CONFIG_TABLE_NAME,
-                        {'feature' : SYMBOLS_TIMESTAMPS_FEATURE,
-                        'value' : SYMBOLS_TIMESTAMPS},
-                        region='sa-east-1')
+    to_put = {'feature' : SYMBOLS_TIMESTAMPS_FEATURE, 'value' : SYMBOLS_TIMESTAMPS}
+
+    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION,
+                                CONFIG_TABLE_NAME,
+                                to_put,
+                                STAGING)
 
 
 @utils.logger.catch
@@ -67,7 +68,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
     table_name = f'mm_cosmobot_historical_{symbol}'
 
-    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, to_put, table_name, STAGING)
+    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, table_name, to_put, STAGING)
 
     SYMBOLS_TIMESTAMPS[symbol] = Decimal(cosmo_timestamp)
 
