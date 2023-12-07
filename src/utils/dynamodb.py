@@ -9,8 +9,11 @@ from boto3.dynamodb.conditions import Key
 from utils import utils
 
 @utils.logger.catch
-def load_feature_value_config(dyn_session, table, value='config'):
+def load_feature_value_config(dyn_session, table, value='config', staging=True):
     """ Load feature(key) value(value) config table """
+
+    if staging:
+        table += '_staging'
 
     utils.logger.info(f'Load Config for {table} {value}')
     return get_item(dyn_session, table, {'feature' : value})
