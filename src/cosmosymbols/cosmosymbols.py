@@ -10,12 +10,9 @@ from utils import utils, dynamodb, cosmomixins
 STAGING = bool(int(os.getenv('TF_VAR_STAGING')))
 AWS_DYNAMO_SESSION = dynamodb.create_session()
 
-if STAGING:
-    CONFIG_TABLE_NAMES =  {'cosmobot' : 'mm_cosmobot_staging',
-                            'cosmoagent' : 'mm_cosmoagent_staging'}
-else:
-    CONFIG_TABLE_NAMES = {'cosmobot' : 'mm_cosmobot',
-                            'cosmoagent' : 'mm_cosmoagent'}
+
+CONFIG_TABLE_NAMES = {'cosmobot' : 'mm_cosmobot',
+                      'cosmoagent' : 'mm_cosmoagent'}
 
 # Cosmosymbols vars
 COSMOBOT_CONFIG = {}
@@ -84,9 +81,10 @@ def update_cb_symbols(symbols_to_migrate):
 
         # Create Parameters table
         utils.logger.info(f'{SYMBOL_TYPE} {symbol} Update parameters table')
-        symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                    CONFIG_TABLE_NAMES['cosmobot'],
-                                                    {'feature' : template_table})
+        symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
+                                                                    CONFIG_TABLE_NAMES['cosmobot'],
+                                                                    {'feature' : template_table},
+                                                                    STAGING)
 
         to_put = {'feature' : f'{symbol}_parameters','value' : symbol_parameter_item}
 
@@ -116,10 +114,15 @@ def launch():
     global COSMOBOT_CONFIG, COSMOAGENT_CONFIG
 
     # Load config
-    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION,
-                                                         CONFIG_TABLE_NAMES['cosmobot'])
-    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION,
-                                                           CONFIG_TABLE_NAMES['cosmoagent'])
+    COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
+                                                            CONFIG_TABLE_NAMES['cosmobot'],
+                                                            'config',
+                                                            STAGING)
+
+    COSMOAGENT_CONFIG = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+                                                            CONFIG_TABLE_NAMES['cosmoagent'],
+                                                            'config',
+                                                            STAGING)
 
     missing_cb_symbols = compare_symbols()
 
