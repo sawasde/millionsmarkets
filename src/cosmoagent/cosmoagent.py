@@ -4,7 +4,6 @@
 import os
 import time
 import threading
-from decimal import Decimal
 
 # local imports
 from utils import utils, trends, broker, dynamodb
@@ -22,10 +21,7 @@ US_MARKET_STATUS = True
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-if STAGING:
-    CONFIG_TABLE_NAME = 'mm_cosmoagent_staging'
-else:
-    CONFIG_TABLE_NAME = 'mm_cosmoagent'
+CONFIG_TABLE_NAME = 'mm_cosmoagent'
 
 SYMBOLS_TIMESTAMPS_FEATURE = f'{SYMBOL_TYPE.lower()}_symbols_timestamps'
 
@@ -70,7 +66,7 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
 
     dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, table_name, to_put, STAGING)
 
-    SYMBOLS_TIMESTAMPS[symbol] = Decimal(cosmo_timestamp)
+    SYMBOLS_TIMESTAMPS[symbol] = cosmo_timestamp
 
 
 def get_crypto_planet_trend(symbol):
@@ -144,11 +140,14 @@ def launch(event=None, context=None):
     global COSMOAGENT_CONFIG, SYMBOLS_TIMESTAMPS, US_MARKET_STATUS
     # Load config
     COSMOAGENT_CONFIG = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
-                                                            CONFIG_TABLE_NAME)
+                                                            CONFIG_TABLE_NAME,
+                                                            'config',
+                                                            STAGING)
 
     SYMBOLS_TIMESTAMPS = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
                                                             CONFIG_TABLE_NAME,
-                                                            SYMBOLS_TIMESTAMPS_FEATURE)
+                                                            SYMBOLS_TIMESTAMPS_FEATURE,
+                                                            STAGING)
 
     # Log path
     if not FROM_LAMBDA:

@@ -1,9 +1,8 @@
-""" Cosmo BOT module to send CRYPTO signals calls"""
+""" Cosmo BOT module to send signals calls"""
 # pylint: disable=no-name-in-module, import-error, R0801
 
 import os
 import threading
-from decimal import Decimal
 import yfinance as yf
 import numpy as np
 import pandas as pd
@@ -21,11 +20,7 @@ DISCORD_COSMOBOT_HOOK_URL = ""
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-
-if STAGING:
-    CONFIG_TABLE_NAME = 'mm_cosmobot_staging'
-else:
-    CONFIG_TABLE_NAME = 'mm_cosmobot'
+CONFIG_TABLE_NAME = 'mm_cosmobot'
 
 # cosmobot vars
 COSMOBOT_CONFIG = {}
@@ -139,9 +134,10 @@ def update_cosmo_parameters(symbol):
     utils.logger.info(f' {symbol} Update cosmo parameters')
 
 
-    symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                CONFIG_TABLE_NAME,
-                                                {'feature' : f'{symbol}_parameters'})
+    symbol_parameter_item = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+                                                                CONFIG_TABLE_NAME,
+                                                                f'{symbol}_parameters',
+                                                                STAGING)
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
@@ -165,7 +161,7 @@ def update_cosmo_parameters(symbol):
         pclose_minima = []
 
     # Update Timestamp
-    symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
+    symbol_parameter_item['timestamp'] = utils.get_timestamp(multiplier=1)
 
     if (len(mtrend_maxima) > 0 ) and (len(mtrend_minima) > 0):
 
@@ -178,8 +174,8 @@ def update_cosmo_parameters(symbol):
         maxima_mean = mtrend_maxima.mean()
         minima_mean = mtrend_minima.mean()
 
-        symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
-        symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
+        symbol_parameter_item['bull_mtrend']= float(f'{maxima_mean:.2f}')
+        symbol_parameter_item['bear_mtrend'] = float(f'{minima_mean:.2f}')
 
         # Log parameters
         utils.logger.info(f'{symbol} parameters max: {maxima_mean} min {minima_mean}')
@@ -195,6 +191,8 @@ def update_cosmo_parameters(symbol):
 
     # Put it on dynamo
     to_put = {'feature' : f'{symbol}_parameters', 'value' : symbol_parameter_item}
+    to_put['value']['order_mtrend'] = order_n
+
     dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, CONFIG_TABLE_NAME, to_put, STAGING)
 
     return pclose_maxima, pclose_minima
@@ -399,7 +397,9 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                            CONFIG_TABLE_NAME)
+                                                            CONFIG_TABLE_NAME,
+                                                            'config',
+                                                            STAGING)
 
     # Log path
     if not FROM_LAMBDA and event == 'set_log_path':
