@@ -49,7 +49,7 @@ def planets_volume(df_inital, return_decimal=5, trend_type='pure'):
         ch_dir_vol = df_res['volume'].iloc[-1]
 
     # Prevent Division by Zero
-    if ch_dir_vol == 0:
+    if ch_dir_vol < 1:
         ch_dir_vol = 1
 
     ch_dir_corpus = abs(ch_dir_gravity) / ch_dir_vol
