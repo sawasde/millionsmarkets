@@ -23,7 +23,6 @@ def hand_json(file, mode, data=None):
         if mode == 'r':
             return json.loads(f_handler.read())
 
-        data = {}
         json.dump(data, f_handler)
         return f_handler.close()
 
@@ -119,6 +118,7 @@ def date_now(use_tuple=True, tmz='America/Bogota'):
 
     return now
 
+
 @logger.catch
 def date_y_m_d():
     """ Format date to YEAR MONTH and DAY separated by sep """
@@ -177,12 +177,11 @@ def discord_webhook_send(url, username, msg, embed=False, attemps=5):
             }
 
             result = requests.post(url, json=data, headers=headers, timeout=24)
+            results.append(result)
 
             if 200 <= result.status_code < 300:
                 break
             attemps -= 1
-
-            results.append(result)
 
     return results
 
