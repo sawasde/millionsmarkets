@@ -56,7 +56,7 @@ def put_item_from_dict(dyn_session, table_name, data, staging, region='sa-east-1
     if staging:
         table_name += '_staging'
 
-    put_item(dyn_session,
+    return put_item(dyn_session,
              table_name,
              item,
              region=region)
