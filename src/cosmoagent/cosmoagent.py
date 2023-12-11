@@ -32,6 +32,7 @@ def put_symbols_timestamps():
 
     to_put = {'feature' : SYMBOLS_TIMESTAMPS_FEATURE, 'value' : SYMBOLS_TIMESTAMPS}
 
+
     dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION,
                                 CONFIG_TABLE_NAME,
                                 to_put,
@@ -63,10 +64,10 @@ def put_planet_trend_info(symbol, ptrend, mtrend, strend, pd_limit, pz_limit, pc
                 'pz_limit' : pz_limit }
 
     table_name = f'mm_cosmobot_historical_{symbol}'
+    result = dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, table_name, to_put, STAGING)
 
-    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, table_name, to_put, STAGING)
-
-    SYMBOLS_TIMESTAMPS[symbol] = cosmo_timestamp
+    if result:
+        SYMBOLS_TIMESTAMPS[symbol] = cosmo_timestamp
 
 
 def get_crypto_planet_trend(symbol):
@@ -148,6 +149,8 @@ def launch(event=None, context=None):
                                                             CONFIG_TABLE_NAME,
                                                             SYMBOLS_TIMESTAMPS_FEATURE,
                                                             STAGING)
+
+    SYMBOLS_TIMESTAMPS = {sym: int(tms) for sym, tms in SYMBOLS_TIMESTAMPS.items()}
 
     # Log path
     if not FROM_LAMBDA:
