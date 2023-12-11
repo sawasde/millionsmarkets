@@ -19,7 +19,7 @@ def get_cosmobot_time(timestamp=None):
     week = date.isocalendar()[1]
     year = date.isocalendar()[0]
 
-    return f'{year}_{week}', week, year, date, timestamp
+    return f'{year}_{week}', week, year, date, int(timestamp)
 
 
 @utils.logger.catch

@@ -137,19 +137,7 @@ def launch(user_symbols=None):
     # Get Market Status
     US_MARKET_STATUS = broker.us_market_status()
 
-    if SYMBOL_TYPE == 'CRYPTO':
-        symbols = COSMOBOT_CONFIG['crypto_symbols']
-    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
-        symbols = COSMOBOT_CONFIG['stock_symbols']
-    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
-        symbols = COSMOBOT_CONFIG['etf_symbols']
-    else:
-        if not US_MARKET_STATUS:
-            utils.logger.info('US Market close')
-        else:
-            utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
-        symbols = []
-
+    symbols = COSMOBOT_CONFIG[f'{SYMBOL_TYPE.lower()}_symbols']
     symbols = user_symbols if user_symbols else symbols
 
     for symbol in symbols:

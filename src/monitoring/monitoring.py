@@ -36,7 +36,8 @@ def monitor_cosmoagent(symbol_set, symbol):
     # Get Symbol timstamps dict
     ca_sym_tms = dynamodb.load_feature_value_config(AWS_DYNAMO_SESSION,
                                                     CONFIG_TABLE_NAME,
-                                                    f'{symbol_set}_symbols_timestamps')
+                                                    f'{symbol_set}_symbols_timestamps',
+                                                    STAGING)
 
     if symbol not in ca_sym_tms.keys():
         return False
@@ -61,7 +62,8 @@ def monitor_cosmobot(symbol_set, symbol):
 
     symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
                                                                 CONFIG_TABLE_NAME,
-                                                                f'{symbol}_parameters')
+                                                                f'{symbol}_parameters',
+                                                                STAGING)
 
     now_tms = symbol_parameter_item['timestamp']
     diff_tms = utils.date_ago_timestmp(minutes=20)
@@ -89,12 +91,10 @@ def send_monitoring_report(bot):
         for symbol, status in symbol_info.items():
 
             general_status = False if not status else general_status
-            msg += f'{symbol}: '
+            msg += f'{symbol} '
             msg += ':white_check_mark:' if status else ':x:'
             msg += '\t'
         msg += '\n'
-
-    msg += '\n'
 
     # Report all symbols each 6 hours
     curr_hour = utils.date_now()[3]
@@ -104,8 +104,10 @@ def send_monitoring_report(bot):
     # If general status is FAIL then sned message
     # AND Alert @Role that something failed
     if not general_status:
-        msg += f'<@&{DISCORD_MONITORING_ROLE}>'
+        msg += f'<@&{DISCORD_MONITORING_ROLE}>\n'
         send_alert = True
+
+    msg += '\n\n'
 
     if send_alert:
         utils.logger.info(f'{bot} Sending Alert')
@@ -138,14 +140,13 @@ def launch(event=None, context=None):
 
         for monitoring_bot in bots:
 
-            if STAGING:
-                CONFIG_TABLE_NAME = f'mm_{monitoring_bot}_staging'
-            else:
-                CONFIG_TABLE_NAME = f'mm_{monitoring_bot}'
+            CONFIG_TABLE_NAME = f'mm_{monitoring_bot}'
 
             # Load config
-            bot_config = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                                CONFIG_TABLE_NAME)
+            bot_config = dynamodb.load_feature_value_config(    AWS_DYNAMO_SESSION,
+                                                                CONFIG_TABLE_NAME,
+                                                                'config',
+                                                                STAGING)
 
             symbols_set = {'crypto': bot_config['crypto_symbols'],
                             'stock':bot_config['stock_symbols'],

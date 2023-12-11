@@ -1,14 +1,19 @@
 """ AWS Dynamo helper module """
 # pylint: disable=no-name-in-module, import-error
 
+from decimal import Decimal
 import os
+import json
 import boto3
 from boto3.dynamodb.conditions import Key
 from utils import utils
 
 @utils.logger.catch
-def load_feature_value_config(dyn_session, table, value='config'):
+def load_feature_value_config(dyn_session, table, value='config', staging=True):
     """ Load feature(key) value(value) config table """
+
+    if staging:
+        table += '_staging'
 
     utils.logger.info(f'Load Config for {table} {value}')
     return get_item(dyn_session, table, {'feature' : value})
@@ -40,6 +45,21 @@ def get_item(dyn_session, table_name, key, region='sa-east-1'):
         return response['Item']['value']
 
     return None
+
+
+@utils.logger.catch
+def put_item_from_dict(dyn_session, table_name, data, staging, region='sa-east-1'):
+    """ Put Item to table given a dict """
+
+    item = json.loads(json.dumps(data), parse_float=Decimal)
+
+    if staging:
+        table_name += '_staging'
+
+    put_item(dyn_session,
+             table_name,
+             item,
+             region=region)
 
 
 @utils.logger.catch

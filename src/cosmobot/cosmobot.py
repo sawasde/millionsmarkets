@@ -1,10 +1,9 @@
-""" Cosmo BOT module to send CRYPTO signals calls"""
+""" Cosmo BOT module to send signals calls"""
 # pylint: disable=no-name-in-module, import-error, R0801
 
 import os
-import json
 import threading
-from decimal import Decimal
+import yfinance as yf
 import numpy as np
 import pandas as pd
 #import discord
@@ -21,11 +20,7 @@ DISCORD_COSMOBOT_HOOK_URL = ""
 
 # AWS Dynamo
 AWS_DYNAMO_SESSION = dynamodb.create_session(from_lambda=FROM_LAMBDA)
-
-if STAGING:
-    CONFIG_TABLE_NAME = 'mm_cosmobot_staging'
-else:
-    CONFIG_TABLE_NAME = 'mm_cosmobot'
+CONFIG_TABLE_NAME = 'mm_cosmobot'
 
 # cosmobot vars
 COSMOBOT_CONFIG = {}
@@ -139,9 +134,10 @@ def update_cosmo_parameters(symbol):
     utils.logger.info(f' {symbol} Update cosmo parameters')
 
 
-    symbol_parameter_item = dynamodb.get_item(  AWS_DYNAMO_SESSION,
-                                                CONFIG_TABLE_NAME,
-                                                {'feature' : f'{symbol}_parameters'})
+    symbol_parameter_item = dynamodb.load_feature_value_config( AWS_DYNAMO_SESSION,
+                                                                CONFIG_TABLE_NAME,
+                                                                f'{symbol}_parameters',
+                                                                STAGING)
     symbol_df = COSMO_SYMBOLS_DFS[symbol]
     COSMO_SYMBOLS_PARAMETERS[symbol] = symbol_parameter_item
 
@@ -165,7 +161,7 @@ def update_cosmo_parameters(symbol):
         pclose_minima = []
 
     # Update Timestamp
-    symbol_parameter_item['timestamp'] = Decimal(utils.get_timestamp(multiplier=1))
+    symbol_parameter_item['timestamp'] = utils.get_timestamp(multiplier=1)
 
     if (len(mtrend_maxima) > 0 ) and (len(mtrend_minima) > 0):
 
@@ -178,8 +174,8 @@ def update_cosmo_parameters(symbol):
         maxima_mean = mtrend_maxima.mean()
         minima_mean = mtrend_minima.mean()
 
-        symbol_parameter_item['bull_mtrend']= Decimal(f'{maxima_mean:.2f}')
-        symbol_parameter_item['bear_mtrend'] = Decimal(f'{minima_mean:.2f}')
+        symbol_parameter_item['bull_mtrend']= float(f'{maxima_mean:.2f}')
+        symbol_parameter_item['bear_mtrend'] = float(f'{minima_mean:.2f}')
 
         # Log parameters
         utils.logger.info(f'{symbol} parameters max: {maxima_mean} min {minima_mean}')
@@ -194,11 +190,10 @@ def update_cosmo_parameters(symbol):
         symbol_parameter_item['bear_mtrend'] = 99
 
     # Put it on dynamo
-    dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                        CONFIG_TABLE_NAME,
-                        {'feature' : f'{symbol}_parameters',
-                        'value' : symbol_parameter_item},
-                        'sa-east-1')
+    to_put = {'feature' : f'{symbol}_parameters', 'value' : symbol_parameter_item}
+    to_put['value']['order_mtrend'] = order_n
+
+    dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, CONFIG_TABLE_NAME, to_put, STAGING)
 
     return pclose_maxima, pclose_minima
 
@@ -293,6 +288,38 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
 
 
 @utils.logger.catch
+def update_yf_symbols_table(symbols, symbol_type):
+    """ Use Yfinance to get general info about symbol"""
+
+    timestamp = int(utils.get_timestamp(multiplier=1))
+    now = utils.date_now(use_tuple=True, tmz='US/Eastern')
+    hour = now[3]
+    minute = now[4]
+
+    remove_keys = ['longBusinessSummary', 'companyOfficers', 'uuid']
+
+    # Update info between 600-630 AM
+    if hour == 6 and minute <= 30:
+
+        utils.logger.info(f'{symbol_type} Update symbol info')
+        for symbol in symbols:
+            tik = yf.Ticker(symbol)
+            info = tik.info
+
+            # Remove inncessary keys
+            for key in remove_keys:
+                if key in info.keys():
+                    info.pop(key, None)
+
+            # Add primary and sort key
+            info['symbol'] = symbol
+            info['symbol_type'] = symbol_type
+            info['timestamp'] = timestamp
+
+            dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, 'mm_symbols', info, STAGING)
+
+
+@utils.logger.catch
 def run(symbol, symbol_type):
     """ Routine loop to send message in case of signal """
     # pylint: disable=consider-using-f-string, global-statement, global-variable-not-assigned
@@ -342,6 +369,8 @@ def run(symbol, symbol_type):
                 utils.logger.info(f"{cosmo_call} {symbol} sending MSG")
                 utils.discord_webhook_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
+                utils.logger.info(f"{symbol} saving cosmo call in DB")
+
                 to_put = {  'week'          : cosmo_time[0],
                             'timestamp'     : cosmo_time[4],
                             'cosmo_call'    : cosmo_call,
@@ -356,17 +385,7 @@ def run(symbol, symbol_type):
                             'pz_limit' : pz_limit,
                             'pd_limit' : pd_limit }
 
-                item = json.loads(json.dumps(to_put), parse_float=Decimal)
-                table_name = 'mm_cosmobot_calls'
-
-                if STAGING:
-                    table_name += '_staging'
-
-                utils.logger.info(f"{symbol} saving cosmo call in DB")
-                dynamodb.put_item(  AWS_DYNAMO_SESSION,
-                                    table_name,
-                                    item,
-                                    region='sa-east-1')
+                dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION, 'mm_cosmobot_calls', to_put, STAGING)
 
 
 @utils.logger.catch
@@ -378,7 +397,9 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
 
     # Load config
     COSMOBOT_CONFIG = dynamodb.load_feature_value_config(   AWS_DYNAMO_SESSION,
-                                                            CONFIG_TABLE_NAME)
+                                                            CONFIG_TABLE_NAME,
+                                                            'config',
+                                                            STAGING)
 
     # Log path
     if not FROM_LAMBDA and event == 'set_log_path':
@@ -391,22 +412,12 @@ def launch(event=None, context=None, threads_chunks=None, user_symbols=None):
     # Get Market Status
     US_MARKET_STATUS = broker.us_market_status()
 
-    if SYMBOL_TYPE == 'CRYPTO':
-        symbols = COSMOBOT_CONFIG['crypto_symbols']
-        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_CRYPTO_HOOK_URL')
+    symbols = COSMOBOT_CONFIG[f'{SYMBOL_TYPE.lower()}_symbols']
+    DISCORD_COSMOBOT_HOOK_URL = os.getenv(f'TF_VAR_COSMOBOT_DISCORD_{SYMBOL_TYPE}_HOOK_URL')
 
-    elif SYMBOL_TYPE == 'STOCK' and US_MARKET_STATUS:
-        symbols = COSMOBOT_CONFIG['stock_symbols']
-        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_STOCK_HOOK_URL')
-
-    elif SYMBOL_TYPE == 'ETF' and US_MARKET_STATUS:
-        symbols = COSMOBOT_CONFIG['etf_symbols']
-        DISCORD_COSMOBOT_HOOK_URL = os.getenv('TF_VAR_COSMOBOT_DISCORD_ETF_HOOK_URL')
-    else:
-        if not US_MARKET_STATUS:
-            utils.logger.info('US Market close')
-        else:
-            utils.logger.error(f'Wrong Symbol Type: {SYMBOL_TYPE}')
+    if SYMBOL_TYPE != 'CRYPTO' and not US_MARKET_STATUS:
+        utils.logger.info('US Market close')
+        update_yf_symbols_table(symbols, SYMBOL_TYPE)
         symbols = []
 
     # only run for user input symbols
