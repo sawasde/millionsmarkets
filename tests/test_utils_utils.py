@@ -65,11 +65,19 @@ def test_discord_webhook_send_success(mock_requests):
     embed = {"description": "desc", "title": "embed title"}
     attempts = 5
 
-    results = discord_webhook_send(url, username, msg, embed, attempts)
+    result_normal = discord_webhook_send(url, username, msg, embed, attempts)
 
-    assert len(results) == 1
-    assert results[0].status_code == 200
-    mock_requests.assert_called_once_with(
+    msg_large = msg * 300
+
+    result_large = discord_webhook_send(url, username, msg_large , embed, attempts)
+
+    assert len(result_normal) == 1
+    assert result_normal[0].status_code == 200
+
+    assert len(result_large) == 2
+    assert result_large[0].status_code == 200
+
+    mock_requests.assert_any_call(
         url,
         json={
             'content': msg,
