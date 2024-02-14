@@ -15,12 +15,11 @@ def run():
 
     utils.logger.info('Run Cosmobot on STOCKS')
     cbot.SYMBOL_TYPE = 'STOCK'
-    cbot.launch()
+    cbot.launch(threads_chunks=2)
 
     utils.logger.info('Run Cosmobot on ETFs')
     cbot.SYMBOL_TYPE = 'ETF'
     cbot.launch()
-
 
 
 @utils.logger.catch
