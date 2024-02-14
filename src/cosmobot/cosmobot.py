@@ -282,7 +282,7 @@ def helper_get_symbol_uf_data(symbol):
 @utils.logger.catch
 def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
     """ Check last calls and compare to the current call to filter it """
-
+    # pylint: disable=superfluous-parens
     utils.logger.info(f'{symbol} {cosmo_call} Checking last calls')
     table_name = 'mm_cosmobot_calls'
     week = cosmo_time[0]
