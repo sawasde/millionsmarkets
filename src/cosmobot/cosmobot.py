@@ -220,14 +220,20 @@ def update_cosmo_dfs(symbol, symbol_type):
 
 
 @utils.logger.catch
-def prepare_msg(call, symbol, pclose, resistance, support, role):
-    """ Prepare Discord message """
+def prepare_msg(call, symbol, pclose, resistance, support, mtrend):
+    """ Prepare message """
     # pylint: disable=too-many-arguments
 
-    symbol_name = symbol
+    # get symbol YF info
+    symbol_info = helper_get_symbol_uf_data(symbol)
 
     # Prepare message
-    msg = f'{call} **{symbol}** - {symbol_name}\n'
+    if '.CL' in symbol:
+        symbol_print = symbol.replace('.CL', '')
+    else:
+        symbol_print = symbol
+
+    msg = f'{call} **{symbol_print}** - {symbol_info["longName"]}\n'
 
     # Float Price for crypto currencies 0.XXXXXX
     if SYMBOL_TYPE == 'CRYPTO' and 'USD' not in symbol:
@@ -238,19 +244,50 @@ def prepare_msg(call, symbol, pclose, resistance, support, role):
 
     msg += f'**Resistance**: ${resistance:,.2f}\n'
     msg += f'**Support**: ${support:,.2f}\n'
-    msg += f'<@&{role}>'
+    msg += f'**Mtrend**: ${mtrend:,.2f}\n'
+
+    for key, value in symbol_info.items():
+        if key == 'longName':
+            continue
+        if value:
+            msg += f'**{key.capitalize()}**: {value}\n'
 
     return msg
 
 
 @utils.logger.catch
+def helper_get_symbol_uf_data(symbol):
+    """ Get the main data given a symbol """
+
+    table_name = 'mm_symbols'
+    symbol_info = {'country':'', 'industry':'', 'sector':'', 'longName':''}
+
+    if STAGING:
+        table_name += '_staging'
+
+    info = dynamodb.query_items(dyn_session=AWS_DYNAMO_SESSION,
+                                table_name=table_name,
+                                pkey='symbol',
+                                pvalue=symbol,
+                                query_type='partition')
+    info = info[-1]
+
+    for key_data in symbol_info:
+        if key_data in info.keys():
+            symbol_info[key_data] = info[key_data]
+
+    return symbol_info
+
+
+@utils.logger.catch
 def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
     """ Check last calls and compare to the current call to filter it """
-
-    utils.logger.info(f'{symbol} Checking last calls')
+    # pylint: disable=superfluous-parens
+    utils.logger.info(f'{symbol} {cosmo_call} Checking last calls')
     table_name = 'mm_cosmobot_calls'
     week = cosmo_time[0]
-    timestamp = utils.date_ago_timestmp(days=3)
+    days_ago_last_call = int(COSMOBOT_CONFIG['days_ago_last_call'])
+    timestamp = utils.date_ago_timestmp(days=days_ago_last_call)
 
     if STAGING:
         table_name += '_staging'
@@ -269,7 +306,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
         return True
 
     last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info), ignore_outliers=True)
-    mask = (last_call['symbol'] == symbol) & (last_call['cosmo_call'] == cosmo_call)
+    mask = (last_call['symbol'] == symbol)# & (last_call['cosmo_call'] == cosmo_call)
     filter_call = last_call[mask]
 
     if len(filter_call) == 0:
@@ -342,6 +379,7 @@ def run(symbol, symbol_type):
         cosmo_time = cosmomixins.get_cosmobot_time()
 
         if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+
             utils.logger.info(f'{symbol} 3rd check passed: Last call')
 
             # Get Cosmo Variables
@@ -361,14 +399,21 @@ def run(symbol, symbol_type):
 
                 # Prepare message
                 msg = prepare_msg(cosmo_call, symbol, pclose, \
-                                    resistance, support, DISCORD_COSMOBOT_ROLE)
+                                    resistance, support, mtrend)
 
                 if STAGING:
                     utils.logger.info(msg)
 
                 utils.logger.info(f"{cosmo_call} {symbol} sending MSG")
+                #TO-DO Send to telegram
+                #
+                #
+
+                # Send to discord
+                msg += f'<@&{DISCORD_COSMOBOT_ROLE}>'
                 utils.discord_webhook_send(DISCORD_COSMOBOT_HOOK_URL, 'CosmoBOT', msg)
 
+                # Save signal in DB
                 utils.logger.info(f"{symbol} saving cosmo call in DB")
 
                 to_put = {  'week'          : cosmo_time[0],

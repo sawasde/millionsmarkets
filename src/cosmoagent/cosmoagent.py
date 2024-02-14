@@ -32,7 +32,6 @@ def put_symbols_timestamps():
 
     to_put = {'feature' : SYMBOLS_TIMESTAMPS_FEATURE, 'value' : SYMBOLS_TIMESTAMPS}
 
-
     dynamodb.put_item_from_dict(AWS_DYNAMO_SESSION,
                                 CONFIG_TABLE_NAME,
                                 to_put,
