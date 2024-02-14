@@ -306,7 +306,7 @@ def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
         return True
 
     last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info), ignore_outliers=True)
-    mask = last_call['symbol'] == symbol# & (last_call['cosmo_call'] == cosmo_call)
+    mask = (last_call['symbol'] == symbol)# & (last_call['cosmo_call'] == cosmo_call)
     filter_call = last_call[mask]
 
     if len(filter_call) == 0:
