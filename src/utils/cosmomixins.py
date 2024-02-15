@@ -23,16 +23,19 @@ def get_cosmobot_time(timestamp=None):
 
 
 @utils.logger.catch
-def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None, staging=True):
+def cosmobot_historical_to_df(dyn_session, table, weeks=5, tms=None, ign_outs=False, stag=True):
     """ Get data from Dynamo and convert it to pandas DataFrame """
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-arguments
 
     dfs = []
     week_now = get_cosmobot_time()[1]
     year_now = get_cosmobot_time()[2]
 
-    if timestamp:
-        week_tms = get_cosmobot_time(timestamp)[1]
+    if stag:
+        table += '_staging'
+
+    if tms:
+        week_tms = get_cosmobot_time(tms)[1]
 
         week_delta = week_now - week_tms
 
@@ -57,25 +60,21 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None, stag
         last_n_weeks.append(f'{year_delta}_{week_delta}')
 
     for week in last_n_weeks:
-        table_name = f'mm_cosmobot_historical_{symbol}'
 
-        if staging:
-            table_name += '_staging'
-
-        if timestamp:
+        if tms:
             info = dynamodb.query_items(    dyn_session=dyn_session,
-                                            table_name=table_name,
+                                            table_name=table,
                                             pkey='week',
                                             pvalue=week,
                                             query_type='both',
                                             skey='timestamp',
-                                            svalue=timestamp,
+                                            svalue=tms,
                                             scond='gte',
                                             region='sa-east-1')
 
         else:
             info = dynamodb.query_items(    dyn_session=dyn_session,
-                                            table_name=table_name,
+                                            table_name=table,
                                             pkey='week',
                                             pvalue=week,
                                             region='sa-east-1')
@@ -85,7 +84,7 @@ def cosmobot_historical_to_df(dyn_session, symbol, weeks=5, timestamp=None, stag
     df_result = pd.concat(dfs, ignore_index=True)
 
     # get df format
-    df_result = aux_format_dynamo_df(df_result)
+    df_result = aux_format_dynamo_df(df_result, ign_outs)
 
     return df_result
 
@@ -164,7 +163,7 @@ def check_time(symbol, df_initial, time_diff=260):
 def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260,
                                     save=True, stag=True, keep_hist=False):
     """ Main function to get data from dynamo compared and optimed to the local data """
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-locals)
 
     if os.path.exists(path):
         utils.logger.info(f'{symbol} Found CSV {path}')
@@ -180,7 +179,8 @@ def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260,
 
         else:
             utils.logger.info(f'{symbol}. timestamps not coupled, using dynamo with timestamp')
-            dynamo_df = cosmobot_historical_to_df(dyn_session, symbol, weeks, last_tms, stag)
+            table = f'mm_cosmobot_historical_{symbol}'
+            dynamo_df = cosmobot_historical_to_df(dyn_session, table, weeks, last_tms, False, stag)
 
             df_result = pd.concat([static_df, dynamo_df], ignore_index=True)
             df_result = df_result.sort_values('timestamp')
@@ -190,7 +190,9 @@ def get_resource_optimized_dfs(dyn_session, symbol, path, weeks, tdiff=260,
         if save:
             output_file = Path(path)
             output_file.parent.mkdir(exist_ok=True, parents=True)
-        df_result = cosmobot_historical_to_df(dyn_session, symbol, weeks, None, stag)
+
+        table = f'mm_cosmobot_historical_{symbol}'
+        df_result = cosmobot_historical_to_df(dyn_session, table, weeks, None, False, stag)
 
     if save:
         utils.logger.info(f'{symbol} saving CSV {path}')
