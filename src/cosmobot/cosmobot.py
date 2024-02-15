@@ -5,7 +5,6 @@ import os
 import threading
 import yfinance as yf
 import numpy as np
-import pandas as pd
 #import discord
 from utils import utils, dynamodb, cosmomixins, broker
 
@@ -224,14 +223,16 @@ def prepare_msg(call, symbol, pclose, resistance, support, mtrend):
     """ Prepare message """
     # pylint: disable=too-many-arguments
 
+    stock_country_codes = ['.CL', '.DE', '.WA']
     # get symbol YF info
     symbol_info = helper_get_symbol_uf_data(symbol)
 
     # Prepare message
-    if '.CL' in symbol:
-        symbol_print = symbol.replace('.CL', '')
-    else:
-        symbol_print = symbol
+    for stock_code in stock_country_codes:
+        if stock_code in symbol:
+            symbol_print = symbol.replace(stock_code, '')
+        else:
+            symbol_print = symbol
 
     msg = f'{call} **{symbol_print}** - {symbol_info["longName"]}\n'
 
@@ -280,46 +281,76 @@ def helper_get_symbol_uf_data(symbol):
 
 
 @utils.logger.catch
-def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+def check_last_calls(symbol, cosmo_call, pclose):
     """ Check last calls and compare to the current call to filter it """
     # pylint: disable=superfluous-parens
+
     utils.logger.info(f'{symbol} {cosmo_call} Checking last calls')
     table_name = 'mm_cosmobot_calls'
-    week = cosmo_time[0]
-    days_ago_last_call = int(COSMOBOT_CONFIG['days_ago_last_call'])
-    timestamp = utils.date_ago_timestmp(days=days_ago_last_call)
 
-    if STAGING:
-        table_name += '_staging'
+    # Take 1 year of info
+    weeks_ago = int(COSMOBOT_CONFIG['weeks_ago_last_call'])
 
-    info = dynamodb.query_items(dyn_session=AWS_DYNAMO_SESSION,
-                                table_name=table_name,
-                                pkey='week',
-                                pvalue=week,
-                                query_type='both',
-                                skey='timestamp',
-                                svalue=timestamp,
-                                scond='gte',
-                                region='sa-east-1')
+    # profit factor
+    profit_factor = float(COSMOBOT_CONFIG['profit_factor'])
 
-    if len(info) == 0:
-        return True
+    # Get last calls DF
+    last_calls_df = cosmomixins.cosmobot_historical_to_df(AWS_DYNAMO_SESSION,
+                                                          table_name,
+                                                          weeks_ago,
+                                                          None,
+                                                          True,
+                                                          STAGING)
 
-    last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info), ignore_outliers=True)
-    mask = (last_call['symbol'] == symbol)# & (last_call['cosmo_call'] == cosmo_call)
-    filter_call = last_call[mask]
+    # Filter by symbol
+    symbol_call_df = last_calls_df[last_calls_df['symbol'] == symbol]
+    symbol_call_list = symbol_call_df['cosmo_call'].to_list()
 
-    if len(filter_call) == 0:
-        return True
+    # Prioritize BUY filtering
+    if 'BUY' in symbol_call_list:
+        buy_mask = (symbol_call_df['cosmo_call'] == 'BUY')
+        last_buy_pclose = symbol_call_df[buy_mask]['pclose'].iloc[-1]
 
-    lc_mtrend = filter_call['mtrend'].iloc[-1]
+    # Call BUY
+    if cosmo_call == 'BUY':
+        # Frequent case empty symbol DF
+        if  (len(symbol_call_df) == 0) or \
+            ('BUY' not in symbol_call_list) or \
+            (pclose <= ((last_buy_pclose*(3 - profit_factor)/2))):
 
-    utils.logger.info(f'{symbol} mtrends last call: {lc_mtrend} current: {mtrend}')
-    new_mtrend = abs(lc_mtrend) * float(COSMOBOT_CONFIG['mtrend_factor'])
-    utils.logger.info(f'New mtrend {new_mtrend}')
+            utils.logger.info(f'{symbol} {cosmo_call} call in {weeks_ago} weeks')
+            return True
 
-    if  abs(mtrend) > new_mtrend:
-        return True
+    # Call SELL
+    if cosmo_call == 'SELL':
+        if (len(symbol_call_df) == 0) or \
+            ('BUY' not in symbol_call_list):
+
+            utils.logger.info(f'{symbol} {cosmo_call} First call in {weeks_ago} weeks')
+            return False
+
+        if pclose >= last_buy_pclose*profit_factor:
+            utils.logger.info(f'{symbol} {cosmo_call} profit factor {profit_factor} reached')
+
+            if 'SELL' in symbol_call_list:
+
+                timestamp = utils.date_ago_timestmp(days=8)
+
+                # Pick SELL calls with a timestamp ago. old SELL signals are discarded
+                sell_mask = (symbol_call_df['cosmo_call'] == 'SELL') & \
+                            (symbol_call_df['timestamp'] >= timestamp)
+
+                last_sell_pclose_df = symbol_call_df[sell_mask]
+
+                if len(last_sell_pclose_df) == 0:
+                    return True
+
+                last_sell_pclose = last_sell_pclose_df['pclose'].iloc[-1]
+
+                if pclose < last_sell_pclose*profit_factor:
+                    return False
+
+            return True
 
     return False
 
@@ -371,19 +402,19 @@ def run(symbol, symbol_type):
     # check for a trading call
     symbol_cosmo_info = COSMO_SYMBOLS_DFS[symbol].iloc[-1]
     mtrend = symbol_cosmo_info['mtrend']
+    pclose = 150#symbol_cosmo_info['pclose']
 
-    cosmo_call = check_cosmo_call(symbol, mtrend)
+    cosmo_call = 'BUY'#check_cosmo_call(symbol, mtrend)
 
     if cosmo_call:
         # Get Cosmo Time Variables
         cosmo_time = cosmomixins.get_cosmobot_time()
 
-        if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+        if check_last_calls(symbol, cosmo_call, pclose):
 
             utils.logger.info(f'{symbol} 3rd check passed: Last call')
 
             # Get Cosmo Variables
-            pclose = symbol_cosmo_info['pclose']
             ptrend = symbol_cosmo_info['ptrend']
             strend = symbol_cosmo_info['strend']
             pd_limit = symbol_cosmo_info['pd_limit']
