@@ -51,7 +51,8 @@ def get_item(dyn_session, table_name, key, region='sa-east-1'):
 def put_item_from_dict(dyn_session, table_name, data, staging, region='sa-east-1'):
     """ Put Item to table given a dict """
 
-    item = json.loads(json.dumps(data), parse_float=Decimal)
+    new_data = helper_dict_format(data)
+    item = json.loads(json.dumps(new_data), parse_float=Decimal)
 
     if staging:
         table_name += '_staging'
@@ -61,6 +62,19 @@ def put_item_from_dict(dyn_session, table_name, data, staging, region='sa-east-1
              item,
              region=region)
 
+@utils.logger.catch
+def helper_dict_format(data):
+    """ Format dict using recursion """
+
+    new_data= data.copy()
+
+    for key, value in new_data.items():
+        if isinstance(value, dict):
+            new_data[key] = helper_dict_format(value)
+        elif isinstance(value, Decimal):
+            new_data[key] = float(value)
+
+    return new_data
 
 @utils.logger.catch
 def put_item(dyn_session, table_name, item, region='sa-east-1'):

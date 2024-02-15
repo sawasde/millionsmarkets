@@ -23,7 +23,7 @@ SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 
 @utils.logger.catch
 def compare_symbols():
-    """ Compare which symbols are in whic bot"""
+    """ Compare which symbols are in which bot"""
 
     ca_symbols = COSMOAGENT_CONFIG[f'{SYMBOL_TYPE.lower()}_symbols']
     cb_symbols = COSMOBOT_CONFIG[f'{SYMBOL_TYPE.lower()}_symbols']
@@ -31,8 +31,10 @@ def compare_symbols():
     utils.logger.info(f'{SYMBOL_TYPE} Cosmoagent Total: {len(ca_symbols)}')
     utils.logger.info(f'{SYMBOL_TYPE} Cosmobot Total: {len(cb_symbols)}')
 
-    missing_cb_symbols = [sym for sym  in ca_symbols if sym  not in cb_symbols]
+    missing_ca_symbols = [sym for sym  in cb_symbols if sym not in ca_symbols]
+    missing_cb_symbols = [sym for sym  in ca_symbols if sym not in cb_symbols]
 
+    utils.logger.info(f'{SYMBOL_TYPE} Cosmoagent missing: {missing_ca_symbols}')
     utils.logger.info(f'{SYMBOL_TYPE} Cosmobot missing: {missing_cb_symbols}')
 
     return missing_cb_symbols
@@ -77,13 +79,16 @@ def update_cb_symbols(symbols_to_migrate):
         #CRYPTO
         template_table = 'BNBUSDT_parameters'
 
+    if not symbols_to_migrate:
+        return
+
     for symbol in symbols_to_migrate:
 
         # Create Parameters table
         utils.logger.info(f'{SYMBOL_TYPE} {symbol} Update parameters table')
         symbol_parameter_item = dynamodb.load_feature_value_config(  AWS_DYNAMO_SESSION,
                                                                     CONFIG_TABLE_NAMES['cosmobot'],
-                                                                    {'feature' : template_table},
+                                                                    template_table,
                                                                     STAGING)
 
         to_put = {'feature' : f'{symbol}_parameters','value' : symbol_parameter_item}
@@ -97,6 +102,7 @@ def update_cb_symbols(symbols_to_migrate):
     utils.logger.info(f'{SYMBOL_TYPE} Update config table')
 
     cosmobot_config = dict(COSMOBOT_CONFIG)
+
     cosmobot_config[f'{SYMBOL_TYPE.lower()}_symbols'] += symbols_to_migrate
 
     to_put = {'feature' : 'config', 'value' : cosmobot_config}

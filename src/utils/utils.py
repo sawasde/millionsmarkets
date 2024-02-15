@@ -9,6 +9,7 @@ import numpy as np
 import requests
 from loguru import logger
 
+
 @logger.catch
 def logger_path(path):
     """ Set the Loguru logger path """
