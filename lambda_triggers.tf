@@ -17,12 +17,6 @@ resource "aws_cloudwatch_event_rule" "rate_4_minutes" {
   schedule_expression = "rate(4 minutes)"
 }
 
-resource "aws_cloudwatch_event_rule" "rate_6_minutes" {
-  name = "lambda_event_rule_rate_6_min"
-  description = "retry scheduled every 6 min"
-  schedule_expression = "rate(6 minutes)"
-}
-
 resource "aws_cloudwatch_event_rule" "rate_8_minutes" {
   name = "lambda_event_rule_rate_8_min"
   description = "retry scheduled every 8 min"
@@ -35,17 +29,24 @@ resource "aws_cloudwatch_event_rule" "rate_20_minutes" {
   schedule_expression = "rate(20 minutes)"
 }
 
+resource "aws_cloudwatch_event_rule" "us_stock_market_2_minutes" {
+  name = "lambda_event_rule_us_stock_market_2_minutes"
+  description = "monday to friday from 8:00 am to 5:00pm UTC. each 2 minutes"
+  schedule_expression = "cron(0/2 13-20 ? * MON-FRI *)"
+}
+
 resource "aws_cloudwatch_event_rule" "us_stock_market_4_minutes" {
   name = "lambda_event_rule_us_stock_market_4_minutes"
-  description = "monday to friday from 9:00 am to 4:00pm UTC. each 4 minutes"
+  description = "monday to friday from 8:00 am to 5:00pm UTC. each 4 minutes"
   schedule_expression = "cron(0/4 13-20 ? * MON-FRI *)"
 }
 
-resource "aws_cloudwatch_event_rule" "us_stock_market_2_minutes" {
-  name = "lambda_event_rule_us_stock_market_2_minutes"
-  description = "monday to friday from 9:00 am to 4:00pm UTC. each 2 minutes"
-  schedule_expression = "cron(0/2 13-20 ? * MON-FRI *)"
+resource "aws_cloudwatch_event_rule" "us_stock_market_6_minutes" {
+  name = "lambda_event_rule_us_stock_market_6_minutes"
+  description = "monday to friday from 8:00 am to 5:00pm UTC. each 6 minutes"
+  schedule_expression = "cron(0/6 13-20 ? * MON-FRI *)"
 }
+
 
 # COSMOAGENT CRYPTO TRIGGERS
 resource "aws_cloudwatch_event_target" "cosmoagent_crypto_trigger" {
