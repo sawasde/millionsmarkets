@@ -43,7 +43,7 @@ def monitor_cosmoagent(symbol_set, symbol):
         return False
 
     now_tms = ca_sym_tms[symbol]
-    diff_tms = utils.date_ago_timestmp(minutes=10)
+    diff_tms = utils.date_ago_timestmp(minutes=13)
 
     if now_tms > diff_tms:
         return True
@@ -66,7 +66,7 @@ def monitor_cosmobot(symbol_set, symbol):
                                                                 STAGING)
 
     now_tms = symbol_parameter_item['timestamp']
-    diff_tms = utils.date_ago_timestmp(minutes=20)
+    diff_tms = utils.date_ago_timestmp(minutes=40)
 
     if now_tms > diff_tms:
         return True
