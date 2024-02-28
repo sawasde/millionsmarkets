@@ -1,6 +1,7 @@
 """ Custom Indicators module """
 # pylint: disable=no-name-in-module, import-error
 
+import math
 from utils import utils
 
 @utils.logger.catch
@@ -48,7 +49,8 @@ def planets_volume(df_inital, return_decimal=5, trend_type='pure'):
     if df_res['volume'].iloc[-1] > ch_dir_vol:
         ch_dir_vol = df_res['volume'].iloc[-1]
 
-    # Prevent Division by Zero
+    # Prevent Division by Zero && None value
+    ch_dir_vol = 0.0 if math.isnan(ch_dir_vol) else ch_dir_vol
     ch_dir_vol = max(ch_dir_vol, 1)
 
     ch_dir_corpus = abs(ch_dir_gravity) / ch_dir_vol
