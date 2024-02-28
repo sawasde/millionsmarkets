@@ -5,7 +5,6 @@ import os
 import threading
 import yfinance as yf
 import numpy as np
-import pandas as pd
 #import discord
 from utils import utils, dynamodb, cosmomixins, broker
 
@@ -31,16 +30,14 @@ SYMBOL_TYPE = os.getenv('TF_VAR_SYMBOL_TYPE')
 US_MARKET_STATUS = True
 
 @utils.logger.catch
-def check_cosmo_call(symbol, mtrend):
+def check_cosmo_call(symbol, mtrends, curr_area):
     """ Rules to call for a signal """
     # pylint: disable=global-variable-not-assigned, line-too-long
 
     if len(COSMO_SYMBOLS_DFS[symbol]) < cosmomixins.MIN_DF_LEN:
         return None
 
-    curr_area = COSMO_SYMBOLS_DFS[symbol]['area'].iloc[-1]
     limit_area = float(COSMO_SYMBOLS_PARAMETERS[symbol]['limit_area'])
-    # filter mtrend
     trade = None
 
     # 1st check: LongTerm trend
@@ -50,21 +47,21 @@ def check_cosmo_call(symbol, mtrend):
         bull_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bull_mtrend'])
         bear_limit_mtrend = float(COSMO_SYMBOLS_PARAMETERS[symbol]['bear_mtrend'])
 
-        # 2nd check: mtrend limit reached BUY or SELL
-        utils.logger.info(f'{symbol} mtrend: {mtrend} limits: {bear_limit_mtrend} {bull_limit_mtrend}')
+        for mtrend in mtrends:
 
-        # BUY
-        if mtrend < bear_limit_mtrend:
-            trade = 'BUY'
-        # SELL
-        elif mtrend > bull_limit_mtrend:
-            trade = 'SELL'
-        # NONE
-        else:
-            trade = None
+            # BUY
+            if mtrend < bear_limit_mtrend:
+                trade = 'BUY'
 
-        if trade:
-            utils.logger.info(f'{symbol} 2nd check passed {trade} mtrend: {mtrend}')
+            # SELL
+            elif mtrend > bull_limit_mtrend:
+                trade = 'SELL'
+
+            if trade:
+                # 2nd check: mtrend limit reached BUY or SELL
+                utils.logger.info(f'{symbol} mtrend: {mtrend} limits: {bear_limit_mtrend} {bull_limit_mtrend}')
+                utils.logger.info(f'{symbol} 2nd check passed {trade} mtrend: {mtrend}')
+                break
 
     return trade
 
@@ -105,6 +102,7 @@ def helper_find_price_by_peak(symbol_df, peaks):
 
     return result
 
+
 @utils.logger.catch
 def get_tp_sl(pclose, pclose_max, pclose_min):
     """ Analyze take profits for short term and long term """
@@ -143,8 +141,8 @@ def update_cosmo_parameters(symbol):
 
     # order n
     order_n = int(symbol_parameter_item['order_mtrend'])
-
     mtrend_array = symbol_df['mtrend'].to_numpy()
+
     # Find local peaks
     if len(symbol_df) > cosmomixins.MIN_DF_LEN:
         mtrend_maxima = find_peaks(mtrend_array, order=order_n, peak_type='max')
@@ -224,14 +222,16 @@ def prepare_msg(call, symbol, pclose, resistance, support, mtrend):
     """ Prepare message """
     # pylint: disable=too-many-arguments
 
+    stock_country_codes = ['.CL', '.DE', '.WA']
     # get symbol YF info
-    symbol_info = helper_get_symbol_uf_data(symbol)
+    symbol_info = helper_get_symbol_data(symbol)
 
     # Prepare message
-    if '.CL' in symbol:
-        symbol_print = symbol.replace('.CL', '')
-    else:
-        symbol_print = symbol
+    for stock_code in stock_country_codes:
+        if stock_code in symbol:
+            symbol_print = symbol.replace(stock_code, '')
+        else:
+            symbol_print = symbol
 
     msg = f'{call} **{symbol_print}** - {symbol_info["longName"]}\n'
 
@@ -256,7 +256,7 @@ def prepare_msg(call, symbol, pclose, resistance, support, mtrend):
 
 
 @utils.logger.catch
-def helper_get_symbol_uf_data(symbol):
+def helper_get_symbol_data(symbol):
     """ Get the main data given a symbol """
 
     table_name = 'mm_symbols'
@@ -280,46 +280,76 @@ def helper_get_symbol_uf_data(symbol):
 
 
 @utils.logger.catch
-def check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+def check_last_calls(symbol, cosmo_call, pclose):
     """ Check last calls and compare to the current call to filter it """
     # pylint: disable=superfluous-parens
+
     utils.logger.info(f'{symbol} {cosmo_call} Checking last calls')
     table_name = 'mm_cosmobot_calls'
-    week = cosmo_time[0]
-    days_ago_last_call = int(COSMOBOT_CONFIG['days_ago_last_call'])
-    timestamp = utils.date_ago_timestmp(days=days_ago_last_call)
 
-    if STAGING:
-        table_name += '_staging'
+    # Take 1 year of info
+    weeks_ago = int(COSMOBOT_CONFIG['weeks_ago_last_call'])
 
-    info = dynamodb.query_items(dyn_session=AWS_DYNAMO_SESSION,
-                                table_name=table_name,
-                                pkey='week',
-                                pvalue=week,
-                                query_type='both',
-                                skey='timestamp',
-                                svalue=timestamp,
-                                scond='gte',
-                                region='sa-east-1')
+    # profit factor
+    profit_factor = float(COSMOBOT_CONFIG['profit_factor'])
 
-    if len(info) == 0:
-        return True
+    # Get last calls DF
+    last_calls_df = cosmomixins.cosmobot_historical_to_df(AWS_DYNAMO_SESSION,
+                                                          table_name,
+                                                          weeks_ago,
+                                                          None,
+                                                          True,
+                                                          STAGING)
 
-    last_call = cosmomixins.aux_format_dynamo_df(pd.DataFrame(info), ignore_outliers=True)
-    mask = (last_call['symbol'] == symbol)# & (last_call['cosmo_call'] == cosmo_call)
-    filter_call = last_call[mask]
+    # Filter by symbol
+    symbol_call_df = last_calls_df[last_calls_df['symbol'] == symbol]
+    symbol_call_list = symbol_call_df['cosmo_call'].to_list()
 
-    if len(filter_call) == 0:
-        return True
+    # Prioritize BUY filtering
+    if 'BUY' in symbol_call_list:
+        buy_mask = (symbol_call_df['cosmo_call'] == 'BUY')
+        last_buy_pclose = symbol_call_df[buy_mask]['pclose'].iloc[-1]
 
-    lc_mtrend = filter_call['mtrend'].iloc[-1]
+    # Call BUY
+    if cosmo_call == 'BUY':
+        # Frequent case empty symbol DF
+        if  (len(symbol_call_df) == 0) or \
+            ('BUY' not in symbol_call_list) or \
+            (pclose <= ((last_buy_pclose*(3 - profit_factor)/2))):
 
-    utils.logger.info(f'{symbol} mtrends last call: {lc_mtrend} current: {mtrend}')
-    new_mtrend = abs(lc_mtrend) * float(COSMOBOT_CONFIG['mtrend_factor'])
-    utils.logger.info(f'New mtrend {new_mtrend}')
+            utils.logger.info(f'{symbol} {cosmo_call} call in {weeks_ago} weeks')
+            return True
 
-    if  abs(mtrend) > new_mtrend:
-        return True
+    # Call SELL
+    if cosmo_call == 'SELL':
+        if (len(symbol_call_df) == 0) or \
+            ('BUY' not in symbol_call_list):
+
+            utils.logger.info(f'{symbol} {cosmo_call} First call in {weeks_ago} weeks')
+            return False
+
+        if pclose >= last_buy_pclose*profit_factor:
+            utils.logger.info(f'{symbol} {cosmo_call} profit factor {profit_factor} reached')
+
+            if 'SELL' in symbol_call_list:
+
+                timestamp = utils.date_ago_timestmp(days=8)
+
+                # Pick SELL calls with a timestamp ago. old SELL signals are discarded
+                sell_mask = (symbol_call_df['cosmo_call'] == 'SELL') & \
+                            (symbol_call_df['timestamp'] >= timestamp)
+
+                last_sell_pclose_df = symbol_call_df[sell_mask]
+
+                if len(last_sell_pclose_df) == 0:
+                    return True
+
+                last_sell_pclose = last_sell_pclose_df['pclose'].iloc[-1]
+
+                if pclose < last_sell_pclose*profit_factor:
+                    return False
+
+            return True
 
     return False
 
@@ -368,28 +398,39 @@ def run(symbol, symbol_type):
     update_cosmo_dfs(symbol, symbol_type)
     pclose_max, pclose_min = update_cosmo_parameters(symbol)
 
-    # check for a trading call
+    # Get last symbol data
     symbol_cosmo_info = COSMO_SYMBOLS_DFS[symbol].iloc[-1]
-    mtrend = symbol_cosmo_info['mtrend']
 
-    cosmo_call = check_cosmo_call(symbol, mtrend)
+    # Get last mtrends
+    last_mtrends = int(COSMOBOT_CONFIG['last_mtrends_to_check'])
+
+    if SYMBOL_TYPE == 'CRYPTO':
+        last_mtrends *= 3
+
+    mtrends = COSMO_SYMBOLS_DFS[symbol]['mtrend'].iloc[-last_mtrends:].to_list()
+    area = symbol_cosmo_info['area']
+    area = float('{:.2e}'.format(area))
+
+    # Check for cosmo_call
+    cosmo_call = check_cosmo_call(symbol, mtrends, area)
 
     if cosmo_call:
         # Get Cosmo Time Variables
         cosmo_time = cosmomixins.get_cosmobot_time()
 
-        if check_last_calls(symbol, cosmo_call, mtrend, cosmo_time):
+        # Get the pclose
+        pclose = symbol_cosmo_info['pclose']
+
+        if check_last_calls(symbol, cosmo_call, pclose):
 
             utils.logger.info(f'{symbol} 3rd check passed: Last call')
 
             # Get Cosmo Variables
-            pclose = symbol_cosmo_info['pclose']
             ptrend = symbol_cosmo_info['ptrend']
             strend = symbol_cosmo_info['strend']
+            mtrend = symbol_cosmo_info['mtrend']
             pd_limit = symbol_cosmo_info['pd_limit']
             pz_limit = symbol_cosmo_info['pz_limit']
-            area = symbol_cosmo_info['area']
-            area = float('{:.2e}'.format(area))
 
             # Get Take Profit & Stop Loss
             result, resistance, support = get_tp_sl(pclose, pclose_max, pclose_min)
